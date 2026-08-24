@@ -55,7 +55,8 @@ export type RegraConciliacao =
   | 'documento'
   | 'fornecedor+valor'
   | 'fornecedor'
-  | 'conta FIFO';
+  | 'conta FIFO'
+  | 'valor exato no grupo';
 
 export interface Divergencia {
   tipo: 'baixa sem titulo' | 'titulo sem baixa antiga';

@@ -71,8 +71,13 @@ interface Passe {
   regra: RegraConciliacao;
   /** janela em dias que o título pode ser posterior à baixa (defasagem de lançamento) */
   janela: number;
+  /** aceita título de outra conta, desde que do mesmo grupo (ex.: 2.1.05) */
+  contaLivreNoGrupo?: boolean;
   aceita: (t: Titulo, b: Baixa, sobraBaixa: number) => boolean;
 }
+
+/** "2.1.05.01.0008" -> "2.1.05" */
+const grupoDe = (conta: string) => conta.split('.').slice(0, 3).join('.');
 
 const PASSES: Passe[] = [
   {
@@ -102,6 +107,15 @@ const PASSES: Passe[] = [
     regra: 'conta FIFO',
     janela: 400,
     aceita: () => true,
+  },
+  {
+    // Tributos costumam ser provisionados numa conta (ex.: CSSL A PAGAR) e
+    // baixados em outra do mesmo grupo (ex.: PIS/COFINS/CSLL - RETIDOS).
+    // Sem nota fiscal, a prova é o valor idêntico dentro do mesmo grupo.
+    regra: 'valor exato no grupo',
+    janela: 120,
+    contaLivreNoGrupo: true,
+    aceita: (t, _b, sobra) => Math.abs(t.saldo - sobra) < TOL,
   },
 ];
 
@@ -146,7 +160,10 @@ export function conciliar(lancamentos: Lancamento[]): ResultadoConciliacao {
 
       const candidatos = titulos
         .filter((t) => {
-          if (t.saldo <= TOL || t.conta !== baixa.conta) return false;
+          if (t.saldo <= TOL) return false;
+          const mesmaConta = t.conta === baixa.conta;
+          if (!mesmaConta && !(passe.contaLivreNoGrupo && grupoDe(t.conta) === grupoDe(baixa.conta)))
+            return false;
           const dias = diasEntre(t.data, baixa.data);
           if (dias < -passe.janela || dias > 3650) return false;
           return passe.aceita(t, baixa, baixa.sobra);
