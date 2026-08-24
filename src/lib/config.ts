@@ -49,8 +49,10 @@ export const CONTAS = {
   afac: '2.4.02.01.0009',
   /** contas a pagar */
   pagar: '2.1',
-  /** disponibilidades */
-  banco: '1.1.01',
+  /** saldo bancário — bancos conta movimento */
+  banco: '1.1.01.02.0001',
+  /** saldo de aplicações bancárias */
+  aplicacoes: '1.1.01.03.0001',
 };
 
 // ---------------------------------------------------------------------------

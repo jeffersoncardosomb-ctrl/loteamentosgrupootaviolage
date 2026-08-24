@@ -62,6 +62,10 @@ export function montarBalancete(partidas: Partida[]): BlocoCalculado[] {
 export const saldoBancario = (partidas: Partida[]) =>
   soma(partidas.filter((p) => p.conta.startsWith(CONTAS.banco)).map((p) => p.saldo));
 
+/** Saldo de aplicações bancárias: devedor, como manda a natureza da conta. */
+export const saldoAplicacoes = (partidas: Partida[]) =>
+  soma(partidas.filter((p) => p.conta.startsWith(CONTAS.aplicacoes)).map((p) => p.saldo));
+
 export function porAno(partidas: Partida[]) {
   const anos = [...new Set(partidas.map((p) => p.data.slice(0, 4)))].sort();
   const series = SERIES_ANO.map((s) => ({
