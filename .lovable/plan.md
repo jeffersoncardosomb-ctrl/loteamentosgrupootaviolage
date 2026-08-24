@@ -1,29 +1,27 @@
-# Por que o saldo a pagar mostra R$ 1.943,58
+# Corrigir a perda de lançamentos idênticos na importação
 
-## O diagnóstico (confirmado na base)
+## O que está acontecendo (confirmado)
 
-O painel não está errando conta: ele mostra exatamente o saldo contábil do grupo 2.1, e esse saldo hoje é **-1.943,58** (453 lançamentos). A diferença de R$ 56,42 para os R$ 2.000 vem de um único caso na base:
+Você está certo: a provisão foi lançada em duas linhas de R$ 56,42 (linhas 126 e 127 do arquivo). Elas são **idênticas** entre si — mesma data, mesma conta, mesmo documento, mesmo histórico e mesmo valor.
 
-| data | documento | conta | valor |
-|---|---|---|---|
-| 03/08/2021 | 000000082 | 2.1.01.01.0001 (título) | -56,42 |
-| 17/08/2021 | 00000008201 (baixa) | 2.1.01.01.0001 | +112,84 |
-| 17/08/2021 | 00000008201 | 1.1.01.02.0001 (banco) | -112,84 |
+A regra que criei para "ignorar duplicidades" no upload trata linhas idênticas como repetição e grava apenas uma. Resultado:
 
-Cartório de Registro de Imóveis: saiu do banco R$ 112,84, mas só existe título de R$ 56,42 na extração. Ou seja, **falta uma segunda nota de R$ 56,42** (a contrapartida de despesa correspondente) na base importada. Essa baixa "sobrando" de 56,42 reduz o saldo a pagar de 2.000 para 1.943,58.
+- Arquivo de origem: **1.528** lançamentos
+- Banco hoje: **1.525** lançamentos (3 perdidos, entre eles um dos 56,42)
+- Soma dos saldos no banco: **−14,05** (deveria ser 0)
 
-Confirmação adicional: a base inteira não fecha em partida dobrada — soma dos saldos = **-14,05** — sinal de que a extração veio incompleta em alguns pontos.
+Por isso a aba "Contas Pagas e a Pagar" fecha em R$ 2.000 (ela usa outro caminho de cálculo) enquanto o saldo do grupo 2.1 aparece como 1.943,58.
 
-## O que fazer
+## Como corrigir
 
-1. **Confirmar com a contabilidade** o lançamento de 17/08/2021: se o pagamento de R$ 112,84 se refere a duas guias de R$ 56,42, falta o título da segunda no arquivo de origem.
-2. **Corrigir na origem e reenviar**: incluir a linha faltante na planilha e subir pela tela de Upload — como duplicidades são ignoradas, só a linha nova entra, e o saldo passa a fechar em R$ 2.000.
-
-## Alternativa, se a linha não puder ser corrigida na origem
-
-Acrescentar ao painel um aviso explícito de "baixa sem título correspondente", listando data, documento, fornecedor e valor (aqui: 17/08/2021, 00000008201, Cartório, R$ 56,42), para que a diferença fique visível e explicada em vez de apenas alterar o total. Nenhuma regra de cálculo seria mudada — o saldo contábil continua sendo a verdade.
+1. **Mudar a regra de duplicidade**: a chave única passa a incluir o identificador da linha de origem (`origem_id`, ex. P00126/P00127). Duas linhas legítimas iguais convivem; reenviar o mesmo arquivo continua sem duplicar, porque o identificador da linha se repete.
+2. **Numerar as linhas do Excel na importação**: hoje o `origem_id` vem vazio no upload de planilha. Passa a ser gerado como `ano-mês` do arquivo + número sequencial da linha, para que o mesmo arquivo reenviado gere sempre os mesmos identificadores.
+3. **Recarregar a base histórica**: limpar e reimportar os 1.528 lançamentos do arquivo original, com a nova regra.
+4. **Conferir**: soma dos saldos = 0, total = 1.528, e o saldo em aberto do grupo 2.1 em 31/07/2026 = R$ 2.000,00.
 
 ## Detalhes técnicos
 
-- O saldo mostrado vem de `serieMensal` / conciliação sobre partidas com conta iniciada em `2.1`; a soma é puramente contábil, então qualquer ajuste tem que vir do dado, não do código.
-- O aviso opcional usaria as `divergencias` que o motor de conciliação já produz (baixas com sobra não alocada), exibidas em `ContasPagasEPagar`.
+- Migração: remover o índice único atual (`data, conta, documento, complemento, quantidade, saldo`) e criar índice único em `(origem_id, data, conta, documento, complemento, quantidade, saldo)`; `origem_id` deixa de aceitar vazio.
+- `inserirPartidas`: `onConflict` passa a usar a nova chave; a deduplicação em memória usa a mesma chave.
+- `lerPlanilha`: gera `origemId` sequencial estável por arquivo (prefixo do nome/competência + índice da linha).
+- Nenhuma alteração nas regras de conciliação, aging ou balancete.
