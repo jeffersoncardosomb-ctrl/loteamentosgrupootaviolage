@@ -108,6 +108,15 @@ const PASSES: Passe[] = [
     janela: 400,
     aceita: () => true,
   },
+  {
+    // Tributos costumam ser provisionados numa conta (ex.: CSSL A PAGAR) e
+    // baixados em outra do mesmo grupo (ex.: PIS/COFINS/CSLL - RETIDOS).
+    // Sem nota fiscal, a prova é o valor idêntico dentro do mesmo grupo.
+    regra: 'valor exato no grupo',
+    janela: 120,
+    contaLivreNoGrupo: true,
+    aceita: (t, _b, sobra) => Math.abs(t.saldo - sobra) < TOL,
+  },
 ];
 
 export function conciliar(lancamentos: Lancamento[]): ResultadoConciliacao {
