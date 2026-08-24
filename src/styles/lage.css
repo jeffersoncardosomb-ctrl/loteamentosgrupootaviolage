@@ -49,14 +49,7 @@ body { margin: 0; }
   padding: 8px 16px; display: grid; place-items: center; line-height: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.marca__nome {
-  font-size: 26px; font-weight: 800; letter-spacing: 0.02em;
-  color: var(--verde); font-style: italic;
-}
-.marca__sub {
-  font-size: 7px; letter-spacing: 0.34em; color: var(--texto-fraco);
-  text-transform: uppercase; margin-top: 2px;
-}
+.marca__logo { display: block; height: 42px; width: auto; }
 .filtros { display: flex; gap: 22px; }
 .filtro { display: flex; flex-direction: column; gap: 3px; }
 .filtro > span { color: var(--branco); font-size: 15px; font-weight: 600; }
