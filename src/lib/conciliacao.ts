@@ -160,7 +160,10 @@ export function conciliar(lancamentos: Lancamento[]): ResultadoConciliacao {
 
       const candidatos = titulos
         .filter((t) => {
-          if (t.saldo <= TOL || t.conta !== baixa.conta) return false;
+          if (t.saldo <= TOL) return false;
+          const mesmaConta = t.conta === baixa.conta;
+          if (!mesmaConta && !(passe.contaLivreNoGrupo && grupoDe(t.conta) === grupoDe(baixa.conta)))
+            return false;
           const dias = diasEntre(t.data, baixa.data);
           if (dias < -passe.janela || dias > 3650) return false;
           return passe.aceita(t, baixa, baixa.sobra);
