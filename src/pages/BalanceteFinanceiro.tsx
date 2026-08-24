@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { montarBalancete, porAno, saldoBancario } from '../lib/balancete';
+import { montarBalancete, porAno, saldoAplicacoes, saldoBancario } from '../lib/balancete';
 import { conciliar } from '../lib/conciliacao';
 import { brl } from '../lib/contasPagar';
 import type { Partida } from '../lib/types';
@@ -15,6 +15,7 @@ export function BalanceteFinanceiro({
   const serie = useMemo(() => porAno(todos), [todos]);
   const saldoPagar = useMemo(() => conciliar(partidas).resumo.saldoContabil, [partidas]);
   const banco = useMemo(() => saldoBancario(partidas), [partidas]);
+  const aplicacoes = useMemo(() => saldoAplicacoes(partidas), [partidas]);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
 
   const alternar = (chave: string) => {
@@ -72,7 +73,7 @@ export function BalanceteFinanceiro({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div className="colunas colunas--2">
+        <div className="colunas colunas--3">
           <div className="kpi">
             <div className="kpi__valor">{brl(saldoPagar)}</div>
             <div className="kpi__rotulo">Saldo Contas a Pagar</div>
@@ -80,6 +81,10 @@ export function BalanceteFinanceiro({
           <div className="kpi">
             <div className="kpi__valor">{brl(banco)}</div>
             <div className="kpi__rotulo">Saldo Bancário</div>
+          </div>
+          <div className="kpi">
+            <div className="kpi__valor">{brl(aplicacoes)}</div>
+            <div className="kpi__rotulo">Saldo de Aplicações Bancárias</div>
           </div>
         </div>
 
