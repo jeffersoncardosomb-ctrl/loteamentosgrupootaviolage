@@ -1,4 +1,4 @@
-import { BLOCOS_BALANCETE, CONTAS, SERIES_ANO, type LinhaBalancete } from './config';
+import { SERIES_ANO, type Empresa, type LinhaBalancete } from './empresas';
 import { arredonda, soma } from './dados';
 import type { Partida } from './types';
 
@@ -52,8 +52,8 @@ function calcular(partidas: Partida[], linha: LinhaBalancete): LinhaCalculada {
   return { rotulo: linha.rotulo, valor: soma(detalhes.map((d) => d.valor)), detalhes };
 }
 
-export function montarBalancete(partidas: Partida[]): BlocoCalculado[] {
-  return BLOCOS_BALANCETE.map((bloco) => {
+export function montarBalancete(partidas: Partida[], empresa: Empresa): BlocoCalculado[] {
+  return empresa.blocos.map((bloco) => {
     const linhas = bloco.linhas.map((l) => calcular(partidas, l));
     return {
       titulo: bloco.titulo,
@@ -64,21 +64,29 @@ export function montarBalancete(partidas: Partida[]): BlocoCalculado[] {
 }
 
 /** Saldo das disponibilidades: devedor, como manda a natureza da conta. */
-export const saldoBancario = (partidas: Partida[]) =>
-  soma(partidas.filter((p) => p.conta.startsWith(CONTAS.banco)).map((p) => p.saldo));
+export const saldoBancario = (partidas: Partida[], empresa: Empresa) =>
+  soma(
+    partidas
+      .filter((p) => empresa.contasBanco.some((c) => p.conta.startsWith(c)))
+      .map((p) => p.saldo),
+  );
 
 /** Saldo de aplicações bancárias: devedor, como manda a natureza da conta. */
-export const saldoAplicacoes = (partidas: Partida[]) =>
-  soma(partidas.filter((p) => p.conta.startsWith(CONTAS.aplicacoes)).map((p) => p.saldo));
+export const saldoAplicacoes = (partidas: Partida[], empresa: Empresa) =>
+  soma(
+    partidas
+      .filter((p) => (empresa.contasAplicacoes ?? []).some((c) => p.conta.startsWith(c)))
+      .map((p) => p.saldo),
+  );
 
-export function porAno(partidas: Partida[]) {
+export function porAno(partidas: Partida[], empresa: Empresa) {
   const anos = [...new Set(partidas.map((p) => p.data.slice(0, 4)))].sort();
   const series = SERIES_ANO.map((s) => ({
     rotulo: s.rotulo,
     cor: s.cor,
     valores: anos.map((ano) => {
       const doAno = partidas.filter((p) => p.data.startsWith(ano));
-      return montarBalancete(doAno).find((b) => b.titulo === s.bloco)?.total ?? 0;
+      return montarBalancete(doAno, empresa).find((b) => b.titulo === s.bloco)?.total ?? 0;
     }),
   }));
   return { categorias: anos, series };

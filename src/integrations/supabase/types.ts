@@ -22,6 +22,7 @@ export type Database = {
           criado_em: string
           data: string
           documento: string
+          empresa_id: string
           id: string
           origem_id: string
           quantidade: number
@@ -34,6 +35,7 @@ export type Database = {
           criado_em?: string
           data: string
           documento?: string
+          empresa_id?: string
           id?: string
           origem_id?: string
           quantidade?: number
@@ -46,6 +48,7 @@ export type Database = {
           criado_em?: string
           data?: string
           documento?: string
+          empresa_id?: string
           id?: string
           origem_id?: string
           quantidade?: number

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { Link } from '@tanstack/react-router';
-import { EMPRESA } from './lib/config';
+import { Link, useNavigate } from '@tanstack/react-router';
+import { EMPRESAS, empresaPorId } from './lib/empresas';
 import { fimDoMes } from './lib/contasPagar';
 import { conferirIntegridade, prepararPartidas } from './lib/dados';
 import type { Partida } from './lib/types';
@@ -19,14 +19,23 @@ const MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-export default function App({ base }: { base: Partida[] }) {
-  const todos = useMemo(() => prepararPartidas(base), [base]);
+export default function App({ base, empresaId }: { base: Partida[]; empresaId: string }) {
+  const navigate = useNavigate();
+  const empresa = useMemo(() => empresaPorId(empresaId), [empresaId]);
+  const todos = useMemo(() => prepararPartidas(base, empresa), [base, empresa]);
   const integridade = useMemo(() => conferirIntegridade(todos), [todos]);
 
   const [aba, setAba] = useState<Aba>('Contas Pagas e a Pagar');
   const [ano, setAno] = useState('todos');
   const [mes, setMes] = useState('todos');
   const [resumo, setResumo] = useState(false);
+
+  /** Anos disponíveis mudam por empresa, então troca de empresa reseta o filtro. */
+  const trocarEmpresa = (id: string) => {
+    setAno('todos');
+    setMes('todos');
+    navigate({ to: '/', search: { empresa: id } });
+  };
 
   const anos = useMemo(
     () => [...new Set(todos.map((p) => p.data.slice(0, 4)))].sort(),
@@ -57,6 +66,12 @@ export default function App({ base }: { base: Partida[] }) {
         </div>
 
         <div className="filtros">
+          <label className="filtro">
+            <span>Empresa</span>
+            <select value={empresa.id} onChange={(e) => trocarEmpresa(e.target.value)}>
+              {EMPRESAS.map((e) => <option key={e.id} value={e.id}>{e.apelido}</option>)}
+            </select>
+          </label>
           <label className="filtro">
             <span>Ano</span>
             <select value={ano} onChange={(e) => setAno(e.target.value)}>
@@ -120,13 +135,13 @@ export default function App({ base }: { base: Partida[] }) {
         )}
 
         {resumo ? (
-          <Resumo partidas={partidas} todos={todos} corte={corte} empresa={EMPRESA.nome} />
+          <Resumo partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
         ) : aba === 'Balancete Financeiro' ? (
-          <BalanceteFinanceiro partidas={partidas} todos={todos} corte={corte} />
+          <BalanceteFinanceiro partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
         ) : aba === 'Contas Pagas e a Pagar' ? (
-          <ContasPagasEPagar partidas={partidas} todos={todos} corte={corte} />
+          <ContasPagasEPagar partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
         ) : (
-          <Aportes partidas={partidas} />
+          <Aportes partidas={partidas} empresa={empresa} />
         )}
       </main>
     </div>

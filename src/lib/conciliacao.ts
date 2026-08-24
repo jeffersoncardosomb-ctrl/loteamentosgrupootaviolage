@@ -1,4 +1,4 @@
-import { CONTAS } from './config';
+import type { Empresa } from './empresas';
 import { arredonda, soma } from './dados';
 import type {
   Baixa, Divergencia, Partida, RegraConciliacao, ResultadoConciliacao, Titulo,
@@ -89,8 +89,12 @@ const PASSES: Passe[] = [
   },
 ];
 
-export function conciliar(partidas: Partida[]): ResultadoConciliacao {
-  const doGrupo = partidas.filter((p) => p.conta.startsWith(CONTAS.pagar));
+export function conciliar(partidas: Partida[], empresa: Empresa): ResultadoConciliacao {
+  const doGrupo = partidas.filter(
+    (p) =>
+      empresa.contasPagar.some((c) => p.conta.startsWith(c)) &&
+      !empresa.contasPagarExceto?.some((c) => p.conta.startsWith(c)),
+  );
 
   const titulos: Titulo[] = doGrupo
     .filter((p) => p.saldo < -TOL)

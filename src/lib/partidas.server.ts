@@ -20,8 +20,8 @@ function clientePublico() {
   });
 }
 
-/** Lê a base inteira, em páginas de mil linhas. */
-export async function lerPartidasPublicas(): Promise<Partida[]> {
+/** Lê a base inteira de uma empresa, em páginas de mil linhas. */
+export async function lerPartidasPublicas(empresaId: string): Promise<Partida[]> {
   const supabase = clientePublico();
   const tamanho = 1000;
   const linhas: Partida[] = [];
@@ -29,6 +29,7 @@ export async function lerPartidasPublicas(): Promise<Partida[]> {
     const { data, error } = await supabase
       .from('partidas')
       .select('origem_id, data, conta, conta_nome, documento, complemento, quantidade, saldo')
+      .eq('empresa_id', empresaId)
       .order('data', { ascending: true })
       .range(inicio, inicio + tamanho - 1);
     if (error) throw new Error(error.message);
@@ -50,22 +51,25 @@ export async function lerPartidasPublicas(): Promise<Partida[]> {
   return linhas;
 }
 
-const chave = (l: LinhaImportacao) =>
-  [l.origemId, l.data, l.conta, l.documento, l.complemento, l.quantidade, l.saldo].join('|');
+const chave = (empresaId: string, l: LinhaImportacao) =>
+  [empresaId, l.origemId, l.data, l.conta, l.documento, l.complemento, l.quantidade, l.saldo]
+    .join('|');
 
 /**
  * Grava as linhas ignorando duplicatas — o índice único cobre
- * origem_id + data + conta + documento + complemento + quantidade + saldo.
- * O identificador da linha entra na chave para que lançamentos legítimos
- * idênticos (ex.: duas guias de mesmo valor) convivam na base.
+ * empresa_id + origem_id + data + conta + documento + complemento +
+ * quantidade + saldo. O identificador da linha entra na chave para que
+ * lançamentos legítimos idênticos (ex.: duas guias de mesmo valor) convivam
+ * na base.
  */
 export async function inserirPartidas(
   supabase: SupabaseClient<Database>,
+  empresaId: string,
   linhas: LinhaImportacao[],
 ) {
   const vistos = new Set<string>();
   const unicas = linhas.filter((l) => {
-    const k = chave(l);
+    const k = chave(empresaId, l);
     if (vistos.has(k)) return false;
     vistos.add(k);
     return true;
@@ -78,6 +82,7 @@ export async function inserirPartidas(
       .from('partidas')
       .upsert(
         unicas.slice(i, i + lote).map((l) => ({
+          empresa_id: empresaId,
           origem_id: l.origemId,
           data: l.data,
           conta: l.conta,
@@ -88,7 +93,7 @@ export async function inserirPartidas(
           saldo: l.saldo,
         })),
         {
-          onConflict: 'origem_id,data,conta,documento,complemento,quantidade,saldo',
+          onConflict: 'empresa_id,origem_id,data,conta,documento,complemento,quantidade,saldo',
           ignoreDuplicates: true,
         },
       )
@@ -105,18 +110,27 @@ export async function inserirPartidas(
   };
 }
 
-/** Base histórica que acompanha o projeto (1.528 lançamentos). */
-export async function baseHistorica(): Promise<LinhaImportacao[]> {
-  const base = (await import('../data/partidas.json')).default as {
-    id: string;
-    data: string;
-    conta: string;
-    contaNome: string;
-    documento: string;
-    complemento: string;
-    quantidade: number;
-    saldo: number;
-  }[];
+interface PartidaHistorica {
+  id: string;
+  data: string;
+  conta: string;
+  contaNome: string;
+  documento: string;
+  complemento: string;
+  quantidade: number;
+  saldo: number;
+}
+
+const ARQUIVO_HISTORICO: Record<string, () => Promise<{ default: PartidaHistorica[] }>> = {
+  'serra-bonita': () => import('../data/partidas.json'),
+  'parque-das-estrelas': () => import('../data/parque-das-estrelas.json'),
+};
+
+/** Base histórica que acompanha o projeto, por empresa. */
+export async function baseHistorica(empresaId: string): Promise<LinhaImportacao[]> {
+  const carregar = ARQUIVO_HISTORICO[empresaId];
+  if (!carregar) throw new Error(`Sem base histórica para a empresa "${empresaId}".`);
+  const base = (await carregar()).default;
   return base.map((p) => ({
     origemId: p.id,
     data: p.data,

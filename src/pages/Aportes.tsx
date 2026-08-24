@@ -1,20 +1,20 @@
 import { useMemo, useState } from 'react';
 import { montarQuadroAportes } from '../lib/aportes';
 import { brl, brlCurto, dataBR } from '../lib/contasPagar';
-import { EMPRESA } from '../lib/config';
+import type { Empresa } from '../lib/empresas';
 import type { Partida } from '../lib/types';
 import { GraficoBarras, Medidor } from '../components/Graficos';
 
 const pct = (v: number) =>
   `${(v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
 
-export function Aportes({ partidas }: { partidas: Partida[] }) {
-  const q = useMemo(() => montarQuadroAportes(partidas), [partidas]);
+export function Aportes({ partidas, empresa }: { partidas: Partida[]; empresa: Empresa }) {
+  const q = useMemo(() => montarQuadroAportes(partidas, empresa), [partidas, empresa]);
   const [socioAberto, setSocioAberto] = useState<string | null>(null);
 
   const temNaoIdentificado =
     Math.abs(q.naoIdentificado.aportes) > 0.005 || Math.abs(q.naoIdentificado.afac) > 0.005;
-  const diferencaCapital = q.totais.aportes - EMPRESA.capitalSocial;
+  const diferencaCapital = q.totais.aportes - q.totais.capitalSocial;
 
   const movimentosDoSocio = socioAberto
     ? q.movimentos.filter((m) => m.socio === socioAberto)
@@ -89,8 +89,8 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
             {Math.abs(diferencaCapital) > 0.005 && (
               <p style={{ margin: '0 0 6px' }}>
                 <strong>Aportes acima do capital contratado</strong>
-                O razão registra {brl(q.totais.aportes)} na conta 2.4.01.01.0002, contra
-                {' '}{brl(EMPRESA.capitalSocial)} de capital social — diferença de
+                O razão registra {brl(q.totais.aportes)} em aportes, contra
+                {' '}{brl(q.totais.capitalSocial)} de capital social — diferença de
                 {' '}<strong>{brl(Math.abs(diferencaCapital))}</strong>. Vale conferir se
                 é integralização a maior a devolver, se cabe alteração contratual ou se
                 parte deveria estar em AFAC.
@@ -104,7 +104,7 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
                 {q.naoIdentificado.partidas.length === 1 ? 'lançamento' : 'lançamentos'}
                 {' '}ficaram fora do rateio. Corrija o complemento na escrituração ou,
                 se o mês já estiver fechado, cadastre o id em
-                {' '}<code>SOCIO_MANUAL</code> ({'src/lib/config.ts'}):
+                {' '}<code>socioManual</code> ({'src/lib/empresas.ts'}):
                 <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
                   {q.naoIdentificado.partidas.map((l) => (
                     <li key={l.id}>
@@ -122,7 +122,7 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
       {q.avisosMapa.length > 0 && (
         <div className="aviso aviso--alerta">
           <div>
-            <strong>Verifique o mapa SOCIO_MANUAL</strong>
+            <strong>Verifique a configuração de sócios</strong>
             Estas entradas foram ignoradas e os valores continuam em "a identificar":
             <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
               {q.avisosMapa.map((a) => <li key={a}>{a}</li>)}
@@ -199,7 +199,7 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
       <div className="colunas colunas--2">
         <div className="cartao">
           <Medidor
-            valor={q.totais.aportes} maximo={EMPRESA.capitalSocial}
+            valor={q.totais.aportes} maximo={q.totais.capitalSocial}
             rotulo="Aportes (R$)" cor="var(--laranja)"
           />
         </div>
