@@ -51,11 +51,13 @@ export async function lerPartidasPublicas(): Promise<Partida[]> {
 }
 
 const chave = (l: LinhaImportacao) =>
-  [l.data, l.conta, l.documento, l.complemento, l.quantidade, l.saldo].join('|');
+  [l.origemId, l.data, l.conta, l.documento, l.complemento, l.quantidade, l.saldo].join('|');
 
 /**
  * Grava as linhas ignorando duplicatas — o índice único cobre
- * data + conta + documento + complemento + quantidade + saldo.
+ * origem_id + data + conta + documento + complemento + quantidade + saldo.
+ * O identificador da linha entra na chave para que lançamentos legítimos
+ * idênticos (ex.: duas guias de mesmo valor) convivam na base.
  */
 export async function inserirPartidas(
   supabase: SupabaseClient<Database>,
@@ -86,7 +88,7 @@ export async function inserirPartidas(
           saldo: l.saldo,
         })),
         {
-          onConflict: 'data,conta,documento,complemento,quantidade,saldo',
+          onConflict: 'origem_id,data,conta,documento,complemento,quantidade,saldo',
           ignoreDuplicates: true,
         },
       )
