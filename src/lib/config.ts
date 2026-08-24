@@ -83,6 +83,10 @@ export interface BlocoBalancete {
  * R$ 576,09 abaixo do relatório antigo — diferença que vem das
  * reclassificações feitas entre as duas versões da base, não de erro de mapa.
  *
+ * "Despesas administrativas e Gerais" foi restrita a 3.4.01.* por decisão
+ * gerencial — antes também somava 4.1.01.02.* e 4.1.01.21.0012, que agora
+ * ficam de fora, então essa linha não fecha mais com o relatório antigo.
+ *
  * Atenção ao 1.1.09.01.0008: depois da reclassificação, ele guarda tanto os
  * custos do loteamento quanto a compra dos terrenos. Os dois documentos de
  * terreno saem para Investimentos e o restante fica em Despesas.
@@ -112,7 +116,7 @@ export const BLOCOS_BALANCETE: BlocoBalancete[] = [
       },
       {
         rotulo: 'Despesas administrativas e Gerais',
-        contas: ['3.4.01', '4.1.01.02', '4.1.01.21.0012'],
+        contas: ['3.4.01'],
         exceto: ['3.4.01.20'],
         natureza: 'D',
       },
