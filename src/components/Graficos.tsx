@@ -167,9 +167,9 @@ export function Medidor({
       <p className="cartao__titulo" style={{ textAlign: 'center' }}>{rotulo}</p>
       <svg className="grafico" viewBox="0 0 160 96" role="img"
         aria-label={`${rotulo}: ${formatar(valor)} de ${formatar(maximo)}`}>
-        <path d={arco(0, 1)} fill="none" stroke="#e6e6e6" strokeWidth={17} strokeLinecap="butt" />
+        <path d={arco(0, 1)} fill="none" stroke="#e6e6e6" strokeWidth={17} strokeLinecap="round" />
         {fracao > 0 && (
-          <path d={arco(0, fracao)} fill="none" stroke={cor} strokeWidth={17} strokeLinecap="butt" />
+          <path d={arco(0, fracao)} fill="none" stroke={cor} strokeWidth={17} strokeLinecap="round" />
         )}
         <text x={cx} y={cy - 12} textAnchor="middle" fontSize={15} fontWeight={700} fill={cor}>
           {formatar(valor)}
