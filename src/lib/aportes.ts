@@ -121,15 +121,29 @@ export function montarQuadroAportes(partidas: Partida[]): QuadroAportes {
   );
   const totalAfac = arredonda([...acc.values()].reduce((a, s) => a + s.afac, 0) + niAfac);
 
+  /**
+   * Com o capital total já 100% integralizado, o resíduo por sócio (até
+   * R$ 50) vem do acúmulo de ~130 pequenos aportes que não seguiram a
+   * proporção exata a cada lançamento — imaterial frente ao capital
+   * social, mas soma zero. Some maior que isso continua aparecendo.
+   */
+  const TOLERANCIA_INTEGRALIZACAO = 50;
+  const capitalTotalIntegralizado = totalAportes >= EMPRESA.capitalSocial - 0.005;
+
   const socios: PosicaoSocio[] = SOCIOS.map((s) => {
     const d = acc.get(s.nome)!;
     const capitalSocial = arredonda(EMPRESA.capitalSocial * s.participacao);
+    const aIntegralizarBruto = arredonda(capitalSocial - d.aportes);
+    const aIntegralizar =
+      capitalTotalIntegralizado && Math.abs(aIntegralizarBruto) <= TOLERANCIA_INTEGRALIZACAO
+        ? 0
+        : aIntegralizarBruto;
     return {
       nome: s.nome,
       participacao: s.participacao,
       capitalSocial,
       aportes: d.aportes,
-      aIntegralizar: arredonda(capitalSocial - d.aportes),
+      aIntegralizar,
       afac: d.afac,
       totalInvestido: arredonda(d.aportes + d.afac),
       participacaoRealizada: totalAportes > 0 ? d.aportes / totalAportes : 0,
