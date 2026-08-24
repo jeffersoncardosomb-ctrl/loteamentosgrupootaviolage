@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import base from './data/partidas.json';
+import { Link } from '@tanstack/react-router';
 import { EMPRESA } from './lib/config';
 import { fimDoMes } from './lib/contasPagar';
 import { conferirIntegridade, prepararPartidas } from './lib/dados';
@@ -18,8 +18,8 @@ const MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-export default function App() {
-  const todos = useMemo(() => prepararPartidas(base as Partida[]), []);
+export default function App({ base }: { base: Partida[] }) {
+  const todos = useMemo(() => prepararPartidas(base), [base]);
   const integridade = useMemo(() => conferirIntegridade(todos), [todos]);
 
   const [aba, setAba] = useState<Aba>('Contas Pagas e a Pagar');
@@ -82,6 +82,7 @@ export default function App() {
           >
             Resumo
           </button>
+          <Link to="/upload" className="link-admin">Admin</Link>
         </div>
       </header>
 
