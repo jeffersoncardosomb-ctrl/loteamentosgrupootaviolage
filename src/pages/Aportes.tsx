@@ -168,7 +168,7 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
         </div>
       )}
 
-      <div className="colunas colunas--3">
+      <div className="colunas colunas--2">
         <div className="cartao">
           <p className="cartao__titulo">Aportes e Capital a Integralizar por Sócio</p>
           <GraficoBarras
@@ -180,6 +180,7 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
                 valores: q.socios.map((s) => Math.max(0, s.aIntegralizar)),
               },
             ]}
+            altura={260}
             rotuloValor
           />
         </div>
@@ -189,15 +190,20 @@ export function Aportes({ partidas }: { partidas: Partida[] }) {
           <GraficoBarras
             categorias={q.socios.map((s) => s.nome.split(' ').slice(0, 2).join(' '))}
             series={[{ rotulo: 'AFAC (R$)', cor: 'var(--verde)', valores: q.socios.map((s) => s.afac) }]}
+            altura={260}
             rotuloValor
           />
         </div>
+      </div>
 
+      <div className="colunas colunas--2">
         <div className="cartao">
           <Medidor
             valor={q.totais.aportes} maximo={EMPRESA.capitalSocial}
             rotulo="Aportes (R$)" cor="var(--laranja)"
           />
+        </div>
+        <div className="cartao">
           <Medidor
             valor={q.totais.afac} maximo={1_000_000}
             rotulo="AFAC (R$)" cor="var(--verde)"
