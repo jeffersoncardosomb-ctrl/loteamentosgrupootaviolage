@@ -6,14 +6,14 @@
    ========================================================================== */
 
 :root {
-  --laranja: #e87722;
-  --laranja-fundo: #ed7d22;
-  --laranja-escuro: #c9611a;
-  --laranja-claro: #f0a263;
-  --pessego: #f7c7a0;
-  --pessego-claro: #fadfc6;
-  --verde: #3e9b3e;
-  --verde-escuro: #2c7a2c;
+  --laranja: #f57c00;
+  --laranja-fundo: #fb8500;
+  --laranja-escuro: #c25f00;
+  --laranja-claro: #f9a94f;
+  --pessego: #fbd3a5;
+  --pessego-claro: #fde7ce;
+  --verde: #009688;
+  --verde-escuro: #00776c;
   --branco: #ffffff;
   --texto: #333333;
   --texto-fraco: #7a7a7a;
@@ -49,14 +49,7 @@ body { margin: 0; }
   padding: 8px 16px; display: grid; place-items: center; line-height: 1;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 }
-.marca__nome {
-  font-size: 26px; font-weight: 800; letter-spacing: 0.02em;
-  color: var(--verde); font-style: italic;
-}
-.marca__sub {
-  font-size: 7px; letter-spacing: 0.34em; color: var(--texto-fraco);
-  text-transform: uppercase; margin-top: 2px;
-}
+.marca__logo { display: block; height: 42px; width: auto; }
 .filtros { display: flex; gap: 22px; }
 .filtro { display: flex; flex-direction: column; gap: 3px; }
 .filtro > span { color: var(--branco); font-size: 15px; font-weight: 600; }

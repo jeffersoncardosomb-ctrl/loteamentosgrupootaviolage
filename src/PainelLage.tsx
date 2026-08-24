@@ -9,6 +9,7 @@ import { ContasPagasEPagar } from './pages/ContasPagasEPagar';
 import { Aportes } from './pages/Aportes';
 import { Resumo } from './pages/Resumo';
 import { brl } from './lib/contasPagar';
+import logoLage from './assets/logo-lage.jpg.asset.json';
 
 const ABAS = ['Balancete Financeiro', 'Contas Pagas e a Pagar', 'Aportes'] as const;
 type Aba = (typeof ABAS)[number];
@@ -52,8 +53,7 @@ export default function App({ base }: { base: Partida[] }) {
     <div className="app">
       <header className="topo">
         <div className="marca">
-          <div className="marca__nome">LAGE</div>
-          <div className="marca__sub">Grupo Negócio Lage</div>
+          <img className="marca__logo" src={logoLage.url} alt="Grupo Otávio Lage" />
         </div>
 
         <div className="filtros">
