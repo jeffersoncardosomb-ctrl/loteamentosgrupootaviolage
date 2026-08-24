@@ -88,7 +88,7 @@ export async function inserirPartidas(
           saldo: l.saldo,
         })),
         {
-          onConflict: 'data,conta,documento,complemento,quantidade,saldo',
+          onConflict: 'origem_id,data,conta,documento,complemento,quantidade,saldo',
           ignoreDuplicates: true,
         },
       )
