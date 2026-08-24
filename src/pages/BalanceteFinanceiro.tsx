@@ -13,21 +13,30 @@ export function BalanceteFinanceiro({
   todos: Partida[];
   corte: string;
 }) {
-  const blocos = useMemo(() => montarBalancete(partidas), [partidas]);
   const serie = useMemo(() => porAno(todos), [todos]);
 
   /**
-   * Os três cartões abaixo são posições (o quanto existe naquela data), não
-   * movimentação do período — por isso usam `todos` até `corte`, e não
-   * `partidas` (que é só o que se moveu no mês). Senão, um mês em que se
-   * pagou mais do que se lançou de título novo, por exemplo, mostraria
-   * "Saldo Contas a Pagar" negativo.
+   * O balancete é posição (o quanto existe naquela data), não movimentação
+   * do período — por isso usa `todos` até `corte`, e não `partidas` (que é
+   * só o que se moveu no mês). Senão, um mês em que se pagou mais do que se
+   * lançou de título novo, por exemplo, mostraria "Saldo Contas a Pagar"
+   * negativo, e as linhas de Entradas/Despesas/Investimentos mostrariam só
+   * o movimento do mês em vez do saldo acumulado da conta.
+   *
+   * Quando o período selecionado ainda não tem nenhum lançamento (`partidas`
+   * vazio — ex.: mês futuro, ainda sem base importada), zera tudo em vez de
+   * repetir a última posição conhecida, que ficaria parecendo atual.
    */
-  const posicao = useMemo(() => todos.filter((p) => p.data <= corte), [todos, corte]);
+  const semDados = partidas.length === 0;
+  const posicao = useMemo(
+    () => (semDados ? [] : todos.filter((p) => p.data <= corte)),
+    [todos, corte, semDados],
+  );
+  const blocos = useMemo(() => montarBalancete(posicao), [posicao]);
   const acumulado = useMemo(() => conciliar(todos), [todos]);
   const saldoPagar = useMemo(
-    () => soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo)),
-    [acumulado, corte],
+    () => (semDados ? 0 : soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo))),
+    [acumulado, corte, semDados],
   );
   const banco = useMemo(() => saldoBancario(posicao), [posicao]);
   const aplicacoes = useMemo(() => saldoAplicacoes(posicao), [posicao]);
@@ -74,7 +83,7 @@ export function BalanceteFinanceiro({
                     </div>
                   ))}
                   {aberto && linha.detalhes.length === 0 && (
-                    <div className="grupo__detalhe"><span>Sem movimento no período</span><span>—</span></div>
+                    <div className="grupo__detalhe"><span>Sem saldo na data selecionada</span><span>—</span></div>
                   )}
                 </div>
               );
