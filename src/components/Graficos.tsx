@@ -48,15 +48,15 @@ export function GraficoBarras({
                     </rect>
                     {rotuloValor && v > 0 && (
                       <text x={x + (larguraBarra - 2) / 2} y={y - 4}
-                        textAnchor="middle" fontSize={9} fill="#555">
+                        textAnchor="middle" fontSize={10} fill="#555">
                         {brlCurto(v)}
                       </text>
                     )}
                   </g>
                 );
               })}
-              <text x={centro} y={altura - margemBaixo + 15} textAnchor="middle"
-                fontSize={11} fill="#555">
+              <text x={centro} y={altura - margemBaixo + 16} textAnchor="middle"
+                fontSize={13} fontWeight={600} fill="#444">
                 {cat}
               </text>
             </g>
