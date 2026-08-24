@@ -71,8 +71,13 @@ interface Passe {
   regra: RegraConciliacao;
   /** janela em dias que o título pode ser posterior à baixa (defasagem de lançamento) */
   janela: number;
+  /** aceita título de outra conta, desde que do mesmo grupo (ex.: 2.1.05) */
+  contaLivreNoGrupo?: boolean;
   aceita: (t: Titulo, b: Baixa, sobraBaixa: number) => boolean;
 }
+
+/** "2.1.05.01.0008" -> "2.1.05" */
+const grupoDe = (conta: string) => conta.split('.').slice(0, 3).join('.');
 
 const PASSES: Passe[] = [
   {
