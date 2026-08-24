@@ -83,7 +83,7 @@ export async function lerPlanilha(arquivo: File): Promise<ResultadoLeitura> {
       continue;
     }
     linhas.push({
-      origemId: '',
+      origemId: `${prefixo}-${String(ordem).padStart(5, '0')}`,
       data,
       conta,
       contaNome: texto(pegar(r, COLUNAS.contaNome)).replace(/[-\s]+$/, ''),
