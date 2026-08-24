@@ -1,0 +1,211 @@
+/* ==========================================================================
+   Painel LAGE — Serra Bonita Empreendimentos Imobiliários
+   Continuidade visual com o relatório Power BI existente: fundo laranja
+   corporativo com malha pontilhada, painel pêssego, tabelas de cabeçalho
+   laranja e números em destaque. Tipografia Segoe UI, como no original.
+   ========================================================================== */
+
+:root {
+  --laranja: #e87722;
+  --laranja-fundo: #ed7d22;
+  --laranja-escuro: #c9611a;
+  --laranja-claro: #f0a263;
+  --pessego: #f7c7a0;
+  --pessego-claro: #fadfc6;
+  --verde: #3e9b3e;
+  --verde-escuro: #2c7a2c;
+  --branco: #ffffff;
+  --texto: #333333;
+  --texto-fraco: #7a7a7a;
+  --borda: #e2e2e2;
+  --vermelho: #b3261e;
+
+  --fonte: 'Segoe UI', 'Segoe UI Web', system-ui, -apple-system, sans-serif;
+  --raio: 10px;
+  --raio-painel: 18px;
+}
+
+* { box-sizing: border-box; }
+
+body { margin: 0; }
+
+.app {
+  min-height: 100vh;
+  font-family: var(--fonte);
+  color: var(--texto);
+  background-color: var(--laranja-fundo);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px);
+  background-size: 14px 14px;
+  padding: 14px clamp(10px, 2vw, 22px) 28px;
+}
+
+/* -------------------------------------------------------- cabeçalho */
+.topo {
+  display: flex; align-items: flex-start; gap: 22px;
+  max-width: 1440px; margin: 0 auto 0;
+}
+.marca {
+  background: var(--branco); border-radius: 6px;
+  padding: 8px 16px; display: grid; place-items: center; line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.marca__nome {
+  font-size: 26px; font-weight: 800; letter-spacing: 0.02em;
+  color: var(--verde); font-style: italic;
+}
+.marca__sub {
+  font-size: 7px; letter-spacing: 0.34em; color: var(--texto-fraco);
+  text-transform: uppercase; margin-top: 2px;
+}
+.filtros { display: flex; gap: 22px; }
+.filtro { display: flex; flex-direction: column; gap: 3px; }
+.filtro > span { color: var(--branco); font-size: 15px; font-weight: 600; }
+.filtro select {
+  min-width: 132px; font-family: inherit; font-size: 13px; color: var(--texto);
+  background: var(--branco); border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 3px; padding: 4px 8px; cursor: pointer;
+}
+.filtro select:focus-visible { outline: 2px solid var(--branco); outline-offset: 1px; }
+.topo__direita { margin-left: auto; }
+.botao-resumo {
+  font-family: inherit; font-size: 14px; color: var(--branco);
+  background: transparent; border: 1.5px solid var(--branco);
+  border-radius: var(--raio); padding: 9px 26px; cursor: pointer;
+  transition: background 140ms ease;
+}
+.botao-resumo:hover, .botao-resumo[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.18);
+}
+.botao-resumo:focus-visible { outline: 2px solid var(--branco); outline-offset: 2px; }
+
+/* -------------------------------------------------------- abas */
+.abas {
+  display: flex; gap: 4px; max-width: 1440px; margin: 6px auto -1px;
+  padding-left: clamp(0px, 26vw, 360px);
+}
+.aba {
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--texto);
+  background: var(--laranja-claro);
+  border: none; border-radius: 10px 10px 0 0;
+  padding: 11px 26px 13px; cursor: pointer; white-space: nowrap;
+  transition: background 140ms ease;
+}
+.aba:hover { background: #f4b57e; }
+.aba--ativa { background: var(--pessego); }
+.aba:focus-visible { outline: 2px solid var(--branco); outline-offset: -3px; }
+
+/* -------------------------------------------------------- painel */
+.painel {
+  max-width: 1440px; margin: 0 auto;
+  background: var(--pessego); border-radius: var(--raio-painel);
+  padding: 16px; display: flex; flex-direction: column; gap: 14px;
+}
+
+.cartao {
+  background: var(--branco); border-radius: var(--raio);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1); padding: 14px 16px;
+}
+.cartao--limpo { padding: 0; overflow: hidden; }
+.cartao__titulo {
+  font-size: 13px; font-weight: 600; color: var(--texto); margin: 0 0 10px;
+}
+.cartao__legenda { font-size: 11px; color: var(--texto-fraco); margin: -6px 0 10px; }
+
+/* -------------------------------------------------------- tabelas */
+.tabela { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tabela thead th {
+  background: var(--laranja); color: var(--branco);
+  font-weight: 600; text-align: left; padding: 9px 12px; white-space: nowrap;
+}
+.tabela thead th.num { text-align: right; }
+.tabela tbody td { padding: 8px 12px; border-bottom: 1px solid var(--borda); }
+.tabela tbody tr:last-child td { border-bottom: none; }
+.tabela td.num, .tabela th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.tabela tbody tr.zebra { background: #fbfbfb; }
+.tabela tbody tr.clicavel { cursor: pointer; }
+.tabela tbody tr.clicavel:hover { background: var(--pessego-claro); }
+.tabela tfoot td {
+  padding: 9px 12px; font-weight: 700; border-top: 2px solid var(--laranja);
+  background: #fff8f2;
+}
+.tabela .fraco { color: var(--texto-fraco); }
+.tabela .negativo { color: var(--vermelho); }
+.tabela .positivo { color: var(--verde-escuro); }
+
+/* -------------------------------------------------------- balancete */
+.grupo { border-radius: var(--raio); overflow: hidden; background: var(--branco); }
+.grupo__cabecalho {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--laranja); color: var(--branco);
+  padding: 7px 12px; font-size: 13px; font-weight: 600;
+}
+.grupo__linha {
+  display: flex; justify-content: space-between; gap: 12px; align-items: center;
+  padding: 8px 12px; border-bottom: 1px solid var(--borda); font-size: 13px;
+}
+.grupo__linha button {
+  background: none; border: 1px solid var(--laranja-claro); border-radius: 2px;
+  width: 15px; height: 15px; display: grid; place-items: center;
+  font-size: 11px; line-height: 1; color: var(--laranja); cursor: pointer;
+  flex-shrink: 0; font-family: inherit;
+}
+.grupo__rotulo { display: flex; align-items: center; gap: 8px; color: #1a5490; }
+.grupo__valor { font-variant-numeric: tabular-nums; font-weight: 600; }
+.grupo__detalhe {
+  padding: 5px 12px 5px 36px; font-size: 12px; color: var(--texto-fraco);
+  display: flex; justify-content: space-between; gap: 12px;
+  border-bottom: 1px solid #f2f2f2; background: #fcfcfc;
+}
+.grupo__total {
+  display: flex; justify-content: space-between; padding: 9px 12px;
+  font-weight: 700; font-size: 13px; background: #fff8f2;
+}
+
+/* -------------------------------------------------------- kpi */
+.kpi {
+  background: var(--branco); border-radius: var(--raio);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+  padding: 18px 14px; text-align: center;
+}
+.kpi__valor {
+  font-size: clamp(21px, 2.4vw, 30px); font-weight: 700; color: var(--laranja);
+  font-variant-numeric: tabular-nums; line-height: 1.1;
+}
+.kpi__valor--verde { color: var(--verde); }
+.kpi__rotulo { font-size: 12px; color: var(--texto-fraco); margin-top: 4px; }
+
+/* -------------------------------------------------------- layouts */
+.colunas { display: grid; gap: 14px; align-items: start; }
+.colunas--balancete { grid-template-columns: minmax(300px, 460px) 1fr; }
+.colunas--pagar { grid-template-columns: 1fr minmax(280px, 380px); }
+.colunas--3 { grid-template-columns: repeat(3, 1fr); }
+.colunas--2 { grid-template-columns: 1fr 1fr; }
+@media (max-width: 1000px) {
+  .colunas--balancete, .colunas--pagar, .colunas--3, .colunas--2 { grid-template-columns: 1fr; }
+  .abas { padding-left: 0; overflow-x: auto; }
+}
+
+/* -------------------------------------------------------- gráficos */
+.grafico { width: 100%; height: auto; display: block; }
+.grafico text { font-family: var(--fonte); }
+.legenda {
+  display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+  font-size: 11px; color: var(--texto); margin-top: 8px;
+}
+.legenda span { display: flex; align-items: center; gap: 5px; }
+.legenda i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+
+/* -------------------------------------------------------- avisos */
+.aviso {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #fff4ec; border-left: 3px solid var(--laranja);
+  border-radius: 4px; padding: 10px 12px; font-size: 12px; color: var(--texto);
+}
+.aviso strong { display: block; margin-bottom: 2px; }
+.aviso--alerta { background: #fdf0ef; border-left-color: var(--vermelho); }
+
+.vazio { padding: 22px 14px; text-align: center; color: var(--texto-fraco); font-size: 13px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -1,4 +1,4 @@
-import { arredonda, soma } from './conciliacao';
+import { arredonda, soma } from './dados';
 import type {
   FaixaAging,
   PosicaoMes,
@@ -66,7 +66,7 @@ export function serieMensal(res: ResultadoConciliacao): PosicaoMes[] {
 function preencherIntervalo(inicio: string, fim: string): string[] {
   const out: string[] = [];
   let [ano = 0, mes = 1] = inicio.split('-').map(Number);
-  const [anoF = 0, mesF = 1] = fim.split('-').map(Number);
+  const [anoF = 0, mesF = 12] = fim.split('-').map(Number);
   while (ano < anoF || (ano === anoF && mes <= mesF)) {
     out.push(`${ano}-${String(mes).padStart(2, '0')}`);
     mes += 1;
