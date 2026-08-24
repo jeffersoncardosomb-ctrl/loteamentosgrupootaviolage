@@ -119,7 +119,7 @@ export const BLOCOS_BALANCETE: BlocoBalancete[] = [
   },
   {
     titulo: 'Adiantamentos',
-    linhas: [{ rotulo: 'Adiantamentos', contas: ['1.1.50'], natureza: 'D' }],
+    linhas: [{ rotulo: 'Adiantamentos', contas: ['1.1.50.01.0001'], natureza: 'D' }],
   },
   {
     titulo: 'Despesas',
