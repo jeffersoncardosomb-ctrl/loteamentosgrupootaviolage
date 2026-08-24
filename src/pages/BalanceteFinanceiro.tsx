@@ -1,21 +1,36 @@
 import { useMemo, useState } from 'react';
 import { montarBalancete, porAno, saldoAplicacoes, saldoBancario } from '../lib/balancete';
 import { conciliar } from '../lib/conciliacao';
-import { brl } from '../lib/contasPagar';
+import { brl, titulosEmAbertoEm } from '../lib/contasPagar';
+import { soma } from '../lib/dados';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
 export function BalanceteFinanceiro({
-  partidas, todos,
+  partidas, todos, corte,
 }: {
   partidas: Partida[];
   todos: Partida[];
+  corte: string;
 }) {
   const blocos = useMemo(() => montarBalancete(partidas), [partidas]);
   const serie = useMemo(() => porAno(todos), [todos]);
-  const saldoPagar = useMemo(() => conciliar(partidas).resumo.saldoContabil, [partidas]);
-  const banco = useMemo(() => saldoBancario(partidas), [partidas]);
-  const aplicacoes = useMemo(() => saldoAplicacoes(partidas), [partidas]);
+
+  /**
+   * Os três cartões abaixo são posições (o quanto existe naquela data), não
+   * movimentação do período — por isso usam `todos` até `corte`, e não
+   * `partidas` (que é só o que se moveu no mês). Senão, um mês em que se
+   * pagou mais do que se lançou de título novo, por exemplo, mostraria
+   * "Saldo Contas a Pagar" negativo.
+   */
+  const posicao = useMemo(() => todos.filter((p) => p.data <= corte), [todos, corte]);
+  const acumulado = useMemo(() => conciliar(todos), [todos]);
+  const saldoPagar = useMemo(
+    () => soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo)),
+    [acumulado, corte],
+  );
+  const banco = useMemo(() => saldoBancario(posicao), [posicao]);
+  const aplicacoes = useMemo(() => saldoAplicacoes(posicao), [posicao]);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
 
   const alternar = (chave: string) => {

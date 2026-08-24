@@ -153,7 +153,9 @@ export function porConta(titulos: TituloEmAberto[]) {
 }
 
 export const brl = (v: number) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  // v === 0 também pega o -0 que sobra de arredondamento de ponto flutuante,
+  // que sem isso o toLocaleString formata como "-R$ 0,00"
+  (v === 0 ? 0 : v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export const brlCurto = (v: number) => {
   const abs = Math.abs(v);
