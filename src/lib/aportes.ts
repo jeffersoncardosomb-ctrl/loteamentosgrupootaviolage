@@ -1,4 +1,4 @@
-import { CONTAS, EMPRESA, SOCIO_MANUAL, SOCIOS } from './config';
+import type { Empresa } from './empresas';
 import { arredonda } from './dados';
 import type { Partida } from './types';
 
@@ -29,7 +29,6 @@ export interface QuadroAportes {
   avisosMapa: string[];
   totais: {
     capitalSocial: number;
-    capitalSubscrito: number;
     aportes: number;
     aIntegralizar: number;
     afac: number;
@@ -42,58 +41,82 @@ export interface QuadroAportes {
 const semAcento = (t: string) =>
   (t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
 
-const NOMES_VALIDOS = new Set(SOCIOS.map((s) => s.nome));
-
 /**
- * Identifica o sócio de uma partida: primeiro o mapa de exceções por id,
- * depois as palavras-chave no complemento. Nome inválido no mapa é ignorado
- * e a partida cai em "a identificar".
+ * Identifica o sócio de uma partida, nesta ordem:
+ *   1. exceção manual pelo id
+ *   2. conta exclusiva do sócio (quando a empresa tem uma conta por sócio)
+ *   3. palavras-chave no complemento
+ *
+ * Sócio configurado que não existe no quadro societário é ignorado e a
+ * partida volta para "a identificar" — erro de digitação não faz valor sumir.
  */
-export function identificarSocio(complemento: string, id?: string): string | null {
-  if (id) {
-    const manual = SOCIO_MANUAL[id];
-    if (manual && NOMES_VALIDOS.has(manual)) return manual;
-  }
-  const texto = semAcento(complemento);
-  const achado = SOCIOS.find((s) => s.chaves.some((c) => texto.includes(c)));
+export function identificarSocio(empresa: Empresa, partida: Partida): string | null {
+  const validos = new Set(empresa.socios.map((s) => s.nome));
+
+  const manual = empresa.socioManual?.[partida.id];
+  if (manual && validos.has(manual)) return manual;
+
+  const porConta = empresa.socioPorConta?.[partida.conta];
+  if (porConta && validos.has(porConta)) return porConta;
+
+  const texto = semAcento(partida.complemento);
+  const achado = empresa.socios.find((s) => s.chaves.some((c) => texto.includes(c)));
   return achado ? achado.nome : null;
 }
 
-export function conferirMapaManual(partidas: Partida[]): string[] {
+export function conferirConfiguracao(empresa: Empresa, partidas: Partida[]): string[] {
+  const validos = new Set(empresa.socios.map((s) => s.nome));
   const ids = new Set(partidas.map((p) => p.id));
-  return Object.entries(SOCIO_MANUAL).flatMap(([id, nome]) => {
-    if (!NOMES_VALIDOS.has(nome)) return [`${id}: "${nome}" não é um sócio cadastrado`];
-    if (!ids.has(id)) return [`${id}: não existe na base carregada`];
-    return [];
+  const avisos: string[] = [];
+  Object.entries(empresa.socioManual ?? {}).forEach(([id, nome]) => {
+    if (!validos.has(nome)) avisos.push(`${id}: "${nome}" não é um sócio cadastrado`);
+    else if (!ids.has(id)) avisos.push(`${id}: não existe na base carregada`);
   });
+  Object.entries(empresa.socioPorConta ?? {}).forEach(([conta, nome]) => {
+    if (!validos.has(nome)) avisos.push(`${conta}: "${nome}" não é um sócio cadastrado`);
+  });
+  return avisos;
 }
+
+const casa = (conta: string, prefixos: string[]) => prefixos.some((c) => conta.startsWith(c));
 
 /**
  * Aportes e AFAC por sócio.
  *
- * Crédito soma (o sócio pôs dinheiro), débito subtrai. Na conta de capital a
- * integralizar existe um débito único de R$ 12.200.000 que é a contrapartida da
- * subscrição do capital, sem sócio no complemento — ele fica fora do rateio,
- * como deve, e aparece à parte como capital subscrito.
+ * Crédito soma (o sócio pôs dinheiro), débito subtrai. Um débito de valor
+ * igual ao capital social na conta de aportes é a contrapartida da
+ * subscrição, e não entra no rateio.
  */
-export function montarQuadroAportes(partidas: Partida[]): QuadroAportes {
+export function montarQuadroAportes(partidas: Partida[], empresa: Empresa): QuadroAportes {
+  /**
+   * Capital social: vem da conta de subscrição quando a empresa tem uma
+   * (caso em que a conta de aportes é redutora e fecha em zero — Serra
+   * Bonita); caso contrário, é o próprio saldo credor da conta de aportes
+   * (Parque das Estrelas, que não tem conta de subscrição separada).
+   */
+  const contasCapital = empresa.contaCapitalSubscrito
+    ? [empresa.contaCapitalSubscrito]
+    : empresa.contasAporte;
+  const capitalSocial = arredonda(
+    -partidas.filter((p) => casa(p.conta, contasCapital)).reduce((a, p) => a + p.saldo, 0),
+  );
+
   const movimentos: MovimentoAporte[] = [];
   const naoIdent: Partida[] = [];
-  const acc = new Map(SOCIOS.map((s) => [s.nome, { aportes: 0, afac: 0 }]));
+  const acc = new Map(empresa.socios.map((s) => [s.nome, { aportes: 0, afac: 0 }]));
   let niAportes = 0;
   let niAfac = 0;
 
-  const ehSubscricao = (p: Partida) =>
-    p.conta === CONTAS.aportes && p.saldo >= EMPRESA.capitalSocial - 0.005;
-
   for (const p of partidas) {
-    const eAporte = p.conta === CONTAS.aportes;
-    const eAfac = p.conta === CONTAS.afac;
-    if ((!eAporte && !eAfac) || ehSubscricao(p)) continue;
+    const eAporte = casa(p.conta, empresa.contasAporte);
+    const eAfac = casa(p.conta, empresa.contasAfac);
+    if (!eAporte && !eAfac) continue;
+    // contrapartida da subscrição de capital — não é dinheiro de sócio
+    if (eAporte && p.saldo >= capitalSocial - 0.005 && capitalSocial > 0) continue;
 
-    const valor = arredonda(-p.saldo); // crédito soma
+    const valor = arredonda(-p.saldo);
     const tipo: MovimentoAporte['tipo'] = eAporte ? 'Aporte' : 'AFAC';
-    const socio = identificarSocio(p.complemento, p.id);
+    const socio = identificarSocio(empresa, p);
 
     if (socio) {
       const alvo = acc.get(socio)!;
@@ -123,17 +146,18 @@ export function montarQuadroAportes(partidas: Partida[]): QuadroAportes {
 
   /**
    * Com o capital total já 100% integralizado, o resíduo por sócio (até
-   * R$ 50) vem do acúmulo de ~130 pequenos aportes que não seguiram a
-   * proporção exata a cada lançamento — imaterial frente ao capital
-   * social, mas soma zero. Some maior que isso continua aparecendo.
+   * R$ 50) costuma vir do acúmulo de muitos pequenos aportes que não
+   * seguiram a proporção exata a cada lançamento — imaterial frente ao
+   * capital social, mas soma zero. Resíduo maior que isso continua
+   * aparecendo.
    */
   const TOLERANCIA_INTEGRALIZACAO = 50;
-  const capitalTotalIntegralizado = totalAportes >= EMPRESA.capitalSocial - 0.005;
+  const capitalTotalIntegralizado = totalAportes >= capitalSocial - 0.005;
 
-  const socios: PosicaoSocio[] = SOCIOS.map((s) => {
+  const socios: PosicaoSocio[] = empresa.socios.map((s) => {
     const d = acc.get(s.nome)!;
-    const capitalSocial = arredonda(EMPRESA.capitalSocial * s.participacao);
-    const aIntegralizarBruto = arredonda(capitalSocial - d.aportes);
+    const contratado = arredonda(capitalSocial * s.participacao);
+    const aIntegralizarBruto = arredonda(contratado - d.aportes);
     const aIntegralizar =
       capitalTotalIntegralizado && Math.abs(aIntegralizarBruto) <= TOLERANCIA_INTEGRALIZACAO
         ? 0
@@ -141,7 +165,7 @@ export function montarQuadroAportes(partidas: Partida[]): QuadroAportes {
     return {
       nome: s.nome,
       participacao: s.participacao,
-      capitalSocial,
+      capitalSocial: contratado,
       aportes: d.aportes,
       aIntegralizar,
       afac: d.afac,
@@ -159,19 +183,12 @@ export function montarQuadroAportes(partidas: Partida[]): QuadroAportes {
     anos.set(ano, atual);
   });
 
-  const capitalSubscrito = arredonda(
-    -partidas
-      .filter((p) => p.conta === CONTAS.capitalSubscrito)
-      .reduce((a, p) => a + p.saldo, 0),
-  );
-
   return {
     socios,
     naoIdentificado: { aportes: niAportes, afac: niAfac, partidas: naoIdent },
-    avisosMapa: conferirMapaManual(partidas),
+    avisosMapa: conferirConfiguracao(empresa, partidas),
     totais: {
-      capitalSocial: EMPRESA.capitalSocial,
-      capitalSubscrito,
+      capitalSocial,
       aportes: totalAportes,
       aIntegralizar: arredonda(socios.reduce((a, s) => a + s.aIntegralizar, 0)),
       afac: totalAfac,

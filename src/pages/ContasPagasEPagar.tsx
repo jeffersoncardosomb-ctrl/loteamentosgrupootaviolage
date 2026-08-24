@@ -1,18 +1,20 @@
 import { useMemo, useState } from 'react';
 import { conciliar } from '../lib/conciliacao';
 import { aging, brl, dataBR, titulosEmAbertoEm } from '../lib/contasPagar';
+import type { Empresa } from '../lib/empresas';
 import type { Partida } from '../lib/types';
 import { Rosca } from '../components/Graficos';
 
 export function ContasPagasEPagar({
-  partidas, corte, todos,
+  partidas, corte, todos, empresa,
 }: {
   partidas: Partida[];
   corte: string;
   todos: Partida[];
+  empresa: Empresa;
 }) {
-  const doPeriodo = useMemo(() => conciliar(partidas), [partidas]);
-  const acumulado = useMemo(() => conciliar(todos), [todos]);
+  const doPeriodo = useMemo(() => conciliar(partidas, empresa), [partidas, empresa]);
+  const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const [detalhe, setDetalhe] = useState<string | null>(null);
 
   const pagas = doPeriodo.baixas.slice().sort((a, b) => a.data.localeCompare(b.data));

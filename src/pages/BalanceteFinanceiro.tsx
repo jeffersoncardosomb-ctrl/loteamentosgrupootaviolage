@@ -3,17 +3,19 @@ import { montarBalancete, porAno, saldoAplicacoes, saldoBancario } from '../lib/
 import { conciliar } from '../lib/conciliacao';
 import { brl, titulosEmAbertoEm } from '../lib/contasPagar';
 import { soma } from '../lib/dados';
+import type { Empresa } from '../lib/empresas';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
 export function BalanceteFinanceiro({
-  partidas, todos, corte,
+  partidas, todos, corte, empresa,
 }: {
   partidas: Partida[];
   todos: Partida[];
   corte: string;
+  empresa: Empresa;
 }) {
-  const serie = useMemo(() => porAno(todos), [todos]);
+  const serie = useMemo(() => porAno(todos, empresa), [todos, empresa]);
 
   /**
    * O balancete é posição (o quanto existe naquela data), não movimentação
@@ -32,14 +34,14 @@ export function BalanceteFinanceiro({
     () => (semDados ? [] : todos.filter((p) => p.data <= corte)),
     [todos, corte, semDados],
   );
-  const blocos = useMemo(() => montarBalancete(posicao), [posicao]);
-  const acumulado = useMemo(() => conciliar(todos), [todos]);
+  const blocos = useMemo(() => montarBalancete(posicao, empresa), [posicao, empresa]);
+  const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const saldoPagar = useMemo(
     () => (semDados ? 0 : soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo))),
     [acumulado, corte, semDados],
   );
-  const banco = useMemo(() => saldoBancario(posicao), [posicao]);
-  const aplicacoes = useMemo(() => saldoAplicacoes(posicao), [posicao]);
+  const banco = useMemo(() => saldoBancario(posicao, empresa), [posicao, empresa]);
+  const aplicacoes = useMemo(() => saldoAplicacoes(posicao, empresa), [posicao, empresa]);
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
 
   const alternar = (chave: string) => {
@@ -123,8 +125,8 @@ export function BalanceteFinanceiro({
           <div>
             <strong>Classificação editável</strong>
             As linhas acima são montadas por prefixo de conta em
-            {' '}<code>src/lib/config.ts</code>. Ajuste ali para casar exatamente com as
-            medidas do Power BI — o resto do painel acompanha sozinho.
+            {' '}<code>src/lib/empresas.ts</code>, por empresa. Ajuste ali para casar
+            exatamente com as medidas do Power BI — o resto do painel acompanha sozinho.
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { supabase } from '@/integrations/supabase/client';
 import { lerPlanilha } from '@/lib/planilha';
+import { EMPRESA_PADRAO, EMPRESAS } from '@/lib/empresas';
 import {
   importarBaseHistorica,
   importarPartidas,
@@ -39,6 +40,7 @@ function UploadPage() {
   const importarBase = useServerFn(importarBaseHistorica);
 
   const [admin, setAdmin] = useState<boolean | null>(null);
+  const [empresaId, setEmpresaId] = useState(EMPRESA_PADRAO.id);
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -66,7 +68,7 @@ function UploadPage() {
         throw new Error(`Colunas ausentes na planilha: ${colunasFaltando.join(', ')}.`);
       }
       if (linhas.length === 0) throw new Error('Nenhuma linha válida encontrada.');
-      const r = await enviar({ data: { linhas } });
+      const r = await enviar({ data: { empresaId, linhas } });
       setResumo(r);
       if (ignoradas > 0) {
         setErro(`${ignoradas} linha(s) sem data ou sem conta foram ignoradas.`);
@@ -83,7 +85,7 @@ function UploadPage() {
     setErro(null);
     setResumo(null);
     try {
-      setResumo(await importarBase({}));
+      setResumo(await importarBase({ data: { empresaId } }));
     } catch (e) {
       setErro(e instanceof Error ? e.message : 'Falha ao importar a base histórica.');
     } finally {
@@ -122,6 +124,17 @@ function UploadPage() {
         já estejam na base são ignorados — pode reenviar o arquivo do mês sem medo.
       </p>
 
+      <label className="mt-4 block text-sm font-medium text-foreground">
+        Empresa
+        <select
+          value={empresaId}
+          onChange={(e) => setEmpresaId(e.target.value)}
+          className="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+        >
+          {EMPRESAS.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
+        </select>
+      </label>
+
       <div className="mt-6 rounded-xl border border-border bg-card p-5">
         <input
           type="file"
@@ -142,8 +155,8 @@ function UploadPage() {
       <div className="mt-4 rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold text-foreground">Base histórica</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Carrega os 1.528 lançamentos que já acompanham o painel. Rodar mais de uma vez
-          não duplica nada.
+          Carrega os lançamentos que já acompanham o painel para a empresa selecionada.
+          Rodar mais de uma vez não duplica nada.
         </p>
         <button
           type="button"

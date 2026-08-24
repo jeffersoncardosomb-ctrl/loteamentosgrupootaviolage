@@ -1,18 +1,18 @@
 import type { Integridade, Partida } from './types';
-import { NOMES_CONTA } from './config';
+import type { Empresa } from './empresas';
 
 export const arredonda = (v: number) => Math.round(v * 100) / 100;
 export const soma = (vs: number[]) => arredonda(vs.reduce((a, b) => a + b, 0));
 
 /** Preenche a descrição da conta quando a base não traz. */
-export function prepararPartidas(brutas: Partida[]): Partida[] {
+export function prepararPartidas(brutas: Partida[], empresa: Empresa): Partida[] {
   const nomes = new Map<string, string>();
   brutas.forEach((p) => {
     if (p.contaNome && !nomes.has(p.conta)) nomes.set(p.conta, p.contaNome);
   });
   return brutas.map((p) => ({
     ...p,
-    contaNome: p.contaNome || NOMES_CONTA[p.conta] || nomes.get(p.conta) || '',
+    contaNome: p.contaNome || empresa.nomesConta?.[p.conta] || nomes.get(p.conta) || '',
   }));
 }
 

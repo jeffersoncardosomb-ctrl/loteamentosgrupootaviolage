@@ -3,7 +3,7 @@ import { montarBalancete, saldoBancario } from '../lib/balancete';
 import { conciliar } from '../lib/conciliacao';
 import { montarQuadroAportes } from '../lib/aportes';
 import { brl, dataBR, titulosEmAbertoEm } from '../lib/contasPagar';
-import { EMPRESA } from '../lib/config';
+import type { Empresa } from '../lib/empresas';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
@@ -13,24 +13,24 @@ export function Resumo({
   partidas: Partida[];
   todos: Partida[];
   corte: string;
-  empresa: string;
+  empresa: Empresa;
 }) {
-  const blocos = useMemo(() => montarBalancete(partidas), [partidas]);
-  const acumulado = useMemo(() => conciliar(todos), [todos]);
-  const aportes = useMemo(() => montarQuadroAportes(todos), [todos]);
+  const blocos = useMemo(() => montarBalancete(partidas, empresa), [partidas, empresa]);
+  const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
+  const aportes = useMemo(() => montarQuadroAportes(todos, empresa), [todos, empresa]);
   const emAberto = useMemo(() => titulosEmAbertoEm(acumulado.titulos, corte), [acumulado, corte]);
 
   const valor = (t: string) => blocos.find((b) => b.titulo === t)?.total ?? 0;
   const entradas = valor('Entradas');
   const despesas = valor('Despesas');
   const investimentos = valor('Investimentos');
-  const banco = saldoBancario(partidas);
+  const banco = saldoBancario(partidas, empresa);
   const totalAberto = emAberto.reduce((a, t) => a + t.saldo, 0);
 
   return (
     <>
       <div className="cartao">
-        <p className="cartao__titulo" style={{ fontSize: 15 }}>{empresa}</p>
+        <p className="cartao__titulo" style={{ fontSize: 15 }}>{empresa.nome}</p>
         <p className="cartao__legenda">Posição em {dataBR(corte)}</p>
       </div>
 
@@ -118,12 +118,12 @@ export function Resumo({
         </div>
       </div>
 
-      {EMPRESA.capitalSocial !== aportes.totais.aportes && (
+      {aportes.totais.capitalSocial !== aportes.totais.aportes && (
         <div className="aviso">
           <div>
             <strong>Capital integralizado x contratado</strong>
-            Contrato: {brl(EMPRESA.capitalSocial)} · razão: {brl(aportes.totais.aportes)} ·
-            diferença de {brl(Math.abs(aportes.totais.aportes - EMPRESA.capitalSocial))}.
+            Contrato: {brl(aportes.totais.capitalSocial)} · razão: {brl(aportes.totais.aportes)} ·
+            diferença de {brl(Math.abs(aportes.totais.aportes - aportes.totais.capitalSocial))}.
           </div>
         </div>
       )}
