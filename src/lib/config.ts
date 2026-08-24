@@ -100,6 +100,13 @@ export interface BlocoBalancete {
  * conta não têm documento e ficam de fora, junto com a conta 4.2.01.01.0004
  * (contrapartida da apropriação): somar as duas pontas dobraria o valor.
  *
+ * "Impostos e Taxas" também é decisão gerencial: só contas iniciadas em
+ * 3.4.02 ou 3.4.03 (hoje só existe 3.4.03 na base). 3.4.01.20 (antes
+ * contava aqui) voltou para
+ * "Despesas administrativas e Gerais". As contas 3.2.* (Arrendamento
+ * Mercantil) e 3.8.* (IRPJ), que também contavam nesta linha, ficaram de
+ * fora do relatório — não entram em nenhuma outra linha do balancete.
+ *
  * Atenção ao 1.1.09.01.0008: além da apropriação mensal, ele guarda os dois
  * documentos de compra de terreno, que saem para Investimentos. A exclusão
  * desses documentos (`DOCS_TERRENO`) é restrita a essa conta porque o número
@@ -134,12 +141,11 @@ export const BLOCOS_BALANCETE: BlocoBalancete[] = [
       {
         rotulo: 'Despesas administrativas e Gerais',
         contas: ['3.4.01'],
-        exceto: ['3.4.01.20'],
         natureza: 'D',
       },
       {
         rotulo: 'Impostos e Taxas',
-        contas: ['3.2', '3.8', '3.4.03', '3.4.01.20'],
+        contas: ['3.4.02', '3.4.03'],
         natureza: 'D',
       },
     ],
