@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import ContasPagar from "@/pages/ContasPagar";
-import "@/styles/loteamentos.css";
+import PainelLage from "@/PainelLage";
+import "@/styles/lage.css";
 
-const title = "Contas a pagar — Serra Bonita";
+const title = "Painel LAGE — Serra Bonita Empreendimentos";
 const description =
-  "Painel de loteamentos Serra Bonita: títulos em aberto, movimento mensal, aging e maiores credores a partir da base contábil.";
+  "Painel financeiro Serra Bonita: balancete financeiro, contas pagas e a pagar, aportes dos sócios e resumo gerencial a partir da base contábil.";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,5 +15,5 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: description },
     ],
   }),
-  component: ContasPagar,
+  component: PainelLage,
 });
