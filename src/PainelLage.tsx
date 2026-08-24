@@ -82,6 +82,7 @@ export default function App({ base }: { base: Partida[] }) {
           >
             Resumo
           </button>
+          <Link to="/upload" className="link-admin">Admin</Link>
         </div>
       </header>
 
