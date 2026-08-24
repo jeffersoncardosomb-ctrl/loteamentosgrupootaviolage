@@ -65,8 +65,14 @@ export interface LinhaBalancete {
   contas: string[];
   /** prefixos a excluir — permite recortar um subgrupo de dentro de outro */
   exceto?: string[];
-  /** quando informado, só entram (ou saem) partidas destes documentos */
-  documentos?: { lista: string[]; modo: 'somente' | 'excluir' };
+  /**
+   * Quando informado, só entram (ou saem) partidas destes documentos.
+   * `contas`, se presente, restringe o filtro a esses prefixos — necessário
+   * porque o número do documento não é único entre contas diferentes.
+   */
+  documentos?: { lista: string[]; modo: 'somente' | 'excluir'; contas?: string[] };
+  /** quando true, só entram partidas com número de documento preenchido */
+  exigeDocumento?: boolean;
   /** 'D' devedora (soma o saldo), 'C' credora (inverte o sinal) */
   natureza: 'D' | 'C';
 }
@@ -87,9 +93,19 @@ export interface BlocoBalancete {
  * gerencial — antes também somava 4.1.01.02.* e 4.1.01.21.0012, que agora
  * ficam de fora, então essa linha não fecha mais com o relatório antigo.
  *
- * Atenção ao 1.1.09.01.0008: depois da reclassificação, ele guarda tanto os
- * custos do loteamento quanto a compra dos terrenos. Os dois documentos de
- * terreno saem para Investimentos e o restante fica em Despesas.
+ * "Custos do Loteamento" também é decisão gerencial: soma as contas 4.1.*
+ * (inclusive 4.1.01.21.0013, por isso ela saiu de "Impostos e Taxas") com os
+ * lançamentos diretos em 1.1.09.01.0008 — só os que têm número de documento
+ * (`exigeDocumento`). Os lançamentos de apropriação mensal de custos nessa
+ * conta não têm documento e ficam de fora, junto com a conta 4.2.01.01.0004
+ * (contrapartida da apropriação): somar as duas pontas dobraria o valor.
+ *
+ * Atenção ao 1.1.09.01.0008: além da apropriação mensal, ele guarda os dois
+ * documentos de compra de terreno, que saem para Investimentos. A exclusão
+ * desses documentos (`DOCS_TERRENO`) é restrita a essa conta porque o número
+ * do documento se repete em outras contas com lançamentos sem relação — ex.:
+ * o documento 000000029 é tanto a escritura do terreno (2020) quanto um
+ * pagamento avulso em 4.1.01.02.0002 (2026).
  */
 export const DOCS_TERRENO = ['000000029', '000000439'];
 
@@ -110,8 +126,9 @@ export const BLOCOS_BALANCETE: BlocoBalancete[] = [
     linhas: [
       {
         rotulo: 'Custos do Loteamento',
-        contas: ['1.1.09', '4.2'],
-        documentos: { lista: DOCS_TERRENO, modo: 'excluir' },
+        contas: ['4.1', '1.1.09'],
+        documentos: { lista: DOCS_TERRENO, modo: 'excluir', contas: ['1.1.09'] },
+        exigeDocumento: true,
         natureza: 'D',
       },
       {
@@ -122,7 +139,7 @@ export const BLOCOS_BALANCETE: BlocoBalancete[] = [
       },
       {
         rotulo: 'Impostos e Taxas',
-        contas: ['3.2', '3.8', '3.4.03', '3.4.01.20', '4.1.01.21.0013'],
+        contas: ['3.2', '3.8', '3.4.03', '3.4.01.20'],
         natureza: 'D',
       },
     ],

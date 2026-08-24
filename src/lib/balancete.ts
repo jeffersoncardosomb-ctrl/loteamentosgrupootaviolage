@@ -19,10 +19,15 @@ export function filtrarLinha(partidas: Partida[], linha: LinhaBalancete): Partid
   return partidas.filter((p) => {
     if (!linha.contas.some((c) => p.conta.startsWith(c))) return false;
     if (linha.exceto?.some((c) => p.conta.startsWith(c))) return false;
+    if (linha.exigeDocumento && !p.documento) return false;
     if (linha.documentos) {
-      const dentro = linha.documentos.lista.includes(p.documento);
-      if (linha.documentos.modo === 'somente' && !dentro) return false;
-      if (linha.documentos.modo === 'excluir' && dentro) return false;
+      const aplica =
+        !linha.documentos.contas || linha.documentos.contas.some((c) => p.conta.startsWith(c));
+      if (aplica) {
+        const dentro = linha.documentos.lista.includes(p.documento);
+        if (linha.documentos.modo === 'somente' && !dentro) return false;
+        if (linha.documentos.modo === 'excluir' && dentro) return false;
+      }
     }
     return true;
   });
