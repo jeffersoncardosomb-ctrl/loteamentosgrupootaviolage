@@ -61,9 +61,21 @@ export async function lerPlanilha(arquivo: File): Promise<ResultadoLeitura> {
     return chave ? r[chave] : null;
   };
 
+  // Identificador estável por arquivo: o mesmo arquivo reenviado gera os
+  // mesmos identificadores, então nada duplica; mas duas linhas legítimas
+  // idênticas dentro do arquivo recebem números diferentes e ambas entram.
+  const prefixo = arquivo.name
+    .replace(/\.[^.]+$/, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 40) || 'PLANILHA';
+
   const linhas: LinhaImportacao[] = [];
   let ignoradas = 0;
+  let ordem = 0;
   for (const r of registros) {
+    ordem += 1;
     const conta = texto(pegar(r, COLUNAS.conta));
     const data = dataISO(pegar(r, COLUNAS.data));
     if (!conta || !data) {
