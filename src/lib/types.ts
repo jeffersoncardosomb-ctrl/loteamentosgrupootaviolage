@@ -1,20 +1,27 @@
-export interface Lancamento {
+/**
+ * FORMATO DA BASE
+ *
+ * Uma linha por partida. A conta vem numa coluna só e o saldo já traz o sinal:
+ *   saldo > 0  →  débito
+ *   saldo < 0  →  crédito
+ *
+ * Não existe mais coluna de débito e crédito separadas, nem sinal a normalizar.
+ * A soma de todos os saldos tem que dar zero — é a prova da partida dobrada.
+ */
+export interface Partida {
   id: string;
-  sistema: string; // F = Financeiro (baixa) · T / C = Título, Compras (provisão)
   data: string; // YYYY-MM-DD
-  contaDebito: string;
-  descDebito: string;
-  contaCredito: string;
-  descCredito: string;
-  valor: number;
-  complemento: string;
+  conta: string;
+  contaNome: string;
   documento: string;
-  centroCusto: string;
-  filial: string;
-  historico: string;
+  complemento: string;
+  quantidade: number;
+  saldo: number;
 }
 
-/** Título a pagar — crédito numa conta 2.1.x */
+// --------------------------------------------------------------- contas a pagar
+
+/** Título a pagar — partida credora numa conta 2.1.x */
 export interface Titulo {
   id: string;
   data: string;
@@ -23,7 +30,6 @@ export interface Titulo {
   fornecedor: string;
   documento: string;
   complemento: string;
-  centroCusto: string;
   valor: number;
   pago: number;
   saldo: number;
@@ -31,7 +37,7 @@ export interface Titulo {
   baixas: BaixaAplicada[];
 }
 
-/** Baixa — débito numa conta 2.1.x */
+/** Baixa — partida devedora numa conta 2.1.x */
 export interface Baixa {
   id: string;
   data: string;
@@ -55,15 +61,12 @@ export type RegraConciliacao =
   | 'documento'
   | 'fornecedor+valor'
   | 'fornecedor'
-  | 'conta FIFO'
-  | 'valor exato no grupo';
+  | 'conta FIFO';
 
 export interface Divergencia {
-  tipo: 'baixa sem titulo' | 'titulo sem baixa antiga';
   id: string;
   data: string;
   conta: string;
-  contaNome: string;
   descricao: string;
   valor: number;
 }
@@ -84,11 +87,11 @@ export interface ResultadoConciliacao {
 }
 
 export interface PosicaoMes {
-  mes: string; // YYYY-MM
-  rotulo: string; // "jul/26"
+  mes: string;
+  rotulo: string;
   titulosValor: number;
   baixasValor: number;
-  saldoAberto: number; // saldo acumulado (créditos − débitos)
+  saldoAberto: number;
   titulosEmAberto: number;
 }
 
@@ -103,4 +106,13 @@ export interface FaixaAging {
 export interface TituloEmAberto extends Titulo {
   diasEmAberto: number;
   faixa: string;
+}
+
+// --------------------------------------------------------------- integridade
+
+export interface Integridade {
+  totalPartidas: number;
+  somaSaldos: number;
+  fecha: boolean;
+  documentosAbertos: { documento: string; diferenca: number; partidas: number }[];
 }

@@ -1,4 +1,4 @@
-import { arredonda, soma } from './conciliacao';
+import { arredonda, soma } from './dados';
 import type {
   FaixaAging,
   PosicaoMes,
@@ -15,12 +15,12 @@ const MESES = [
 export const mesDe = (data: string) => data.slice(0, 7);
 
 export function rotuloMes(mes: string): string {
-  const [ano = '', m = '1'] = mes.split('-');
+  const [ano, m] = mes.split('-');
   return `${MESES[Number(m) - 1]}/${ano.slice(2)}`;
 }
 
 export function fimDoMes(mes: string): string {
-  const [ano = 0, m = 1] = mes.split('-').map(Number);
+  const [ano, m] = mes.split('-').map(Number);
   const ultimo = new Date(Date.UTC(ano, m, 0)).getUTCDate();
   return `${mes}-${String(ultimo).padStart(2, '0')}`;
 }
@@ -40,7 +40,7 @@ export function serieMensal(res: ResultadoConciliacao): PosicaoMes[] {
   if (meses.size === 0) return [];
 
   const ordenados = [...meses].sort();
-  const preenchidos = preencherIntervalo(ordenados[0]!, ordenados[ordenados.length - 1]!);
+  const preenchidos = preencherIntervalo(ordenados[0], ordenados[ordenados.length - 1]);
 
   let acumulado = 0;
   return preenchidos.map((mes) => {
@@ -65,8 +65,8 @@ export function serieMensal(res: ResultadoConciliacao): PosicaoMes[] {
 
 function preencherIntervalo(inicio: string, fim: string): string[] {
   const out: string[] = [];
-  let [ano = 0, mes = 1] = inicio.split('-').map(Number);
-  const [anoF = 0, mesF = 1] = fim.split('-').map(Number);
+  let [ano, mes] = inicio.split('-').map(Number);
+  const [anoF, mesF] = fim.split('-').map(Number);
   while (ano < anoF || (ano === anoF && mes <= mesF)) {
     out.push(`${ano}-${String(mes).padStart(2, '0')}`);
     mes += 1;
@@ -114,7 +114,7 @@ const FAIXAS: { rotulo: string; min: number; max: number | null }[] = [
 
 export const faixaDe = (dias: number) =>
   FAIXAS.find((f) => dias >= f.min && (f.max === null || dias <= f.max))?.rotulo ??
-  FAIXAS[0]!.rotulo;
+  FAIXAS[0].rotulo;
 
 export function aging(titulos: TituloEmAberto[]): FaixaAging[] {
   return FAIXAS.map((f) => {
