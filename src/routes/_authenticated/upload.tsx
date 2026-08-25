@@ -1,14 +1,17 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { supabase } from '@/integrations/supabase/client';
 import { lerPlanilha } from '@/lib/planilha';
-import { EMPRESA_PADRAO, EMPRESAS } from '@/lib/empresas';
+import { EMPRESA_PADRAO, EMPRESAS, empresaPorId } from '@/lib/empresas';
 import {
   importarBaseHistorica,
   importarPartidas,
+  listarAcessos,
+  regenerarAcesso,
   souAdmin,
 } from '@/lib/partidas.functions';
+
 
 const title = 'Enviar base contábil — Painel LAGE';
 const description = 'Envio mensal da planilha de lançamentos que alimenta o Painel LAGE.';
