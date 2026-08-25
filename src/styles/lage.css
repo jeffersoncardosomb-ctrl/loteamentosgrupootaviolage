@@ -59,6 +59,13 @@ body { margin: 0; }
   border-radius: 3px; padding: 4px 8px; cursor: pointer;
 }
 .filtro select:focus-visible { outline: 2px solid var(--branco); outline-offset: 1px; }
+.filtro-periodo { display: flex; flex-direction: column; gap: 3px; }
+.filtro-periodo > span { color: var(--texto); font-size: 13px; font-weight: 600; }
+.filtro-periodo input[type='month'] {
+  min-width: 132px; font-family: inherit; font-size: 13px; color: var(--texto);
+  background: var(--branco); border: 1px solid var(--borda);
+  border-radius: 3px; padding: 4px 8px; cursor: pointer;
+}
 .topo__direita { margin-left: auto; }
 .botao-resumo {
   font-family: inherit; font-size: 14px; color: var(--branco);

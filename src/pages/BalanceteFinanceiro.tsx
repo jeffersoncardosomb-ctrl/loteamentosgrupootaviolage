@@ -1,55 +1,58 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { saldoAplicacoes, saldoBancario } from '../lib/balancete';
 import { movimentoCaixa } from '../lib/caixa';
 import { conciliar } from '../lib/conciliacao';
-import { brl, titulosEmAbertoEm } from '../lib/contasPagar';
+import { brl, dataBR, fimDoMes, titulosEmAbertoEm } from '../lib/contasPagar';
 import { soma } from '../lib/dados';
 import type { Empresa } from '../lib/empresas';
 import { montarBlocosCaixa, porAnoCaixa, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
-export function BalanceteFinanceiro({
-  partidas, todos, corte, empresa,
-}: {
-  partidas: Partida[];
-  todos: Partida[];
-  corte: string;
-  empresa: Empresa;
-}) {
+/** Mês mais recente com lançamento, no formato AAAA-MM — abre a aba já no último mês. */
+function mesMaisRecente(todos: Partida[]): string {
+  const ultima = todos.reduce((a, p) => (p.data > a ? p.data : a), '0000-00-00');
+  return ultima === '0000-00-00' ? new Date().toISOString().slice(0, 7) : ultima.slice(0, 7);
+}
+
+export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empresa: Empresa }) {
+  const [mesInicio, setMesInicio] = useState(() => mesMaisRecente(todos));
+  const [mesFim, setMesFim] = useState(() => mesMaisRecente(todos));
+
+  // Corrige silenciosamente se o usuário inverter início/fim.
+  const [inicioEfetivo, fimEfetivo] = mesInicio <= mesFim ? [mesInicio, mesFim] : [mesFim, mesInicio];
+  const dataInicio = `${inicioEfetivo}-01`;
+  const dataFimPeriodo = fimDoMes(fimEfetivo);
+
   const serie = useMemo(() => porAnoCaixa(todos, empresa), [todos, empresa]);
 
   /**
-   * O balancete é posição (o quanto existe naquela data), não movimentação
-   * do período — por isso usa `todos` até `corte`, e não `partidas` (que é
-   * só o que se moveu no mês). Senão, um mês em que se pagou mais do que se
-   * lançou de título novo, por exemplo, mostraria "Saldo Contas a Pagar"
-   * negativo, e as linhas de Entradas/Despesas/Investimentos mostrariam só
-   * o movimento do mês em vez do saldo acumulado da conta.
-   *
-   * Quando o período selecionado ainda não tem nenhum lançamento (`partidas`
-   * vazio — ex.: mês futuro, ainda sem base importada), zera tudo em vez de
-   * repetir a última posição conhecida, que ficaria parecendo atual.
+   * Ao contrário das outras abas (posição acumulada desde o início), aqui é
+   * o movimento financeiro DENTRO do período selecionado — quanto entrou e
+   * saiu de caixa naquele intervalo, não o saldo acumulado até ele. Um
+   * período sem nenhum lançamento zera naturalmente (nada cai no filtro de
+   * data) — "Saldo Anterior" continua aparecendo normalmente, porque é
+   * posição (independe de o período em si ter movimento).
    */
-  const semDados = partidas.length === 0;
-  const posicao = useMemo(
-    () => (semDados ? [] : todos.filter((p) => p.data <= corte)),
-    [todos, corte, semDados],
+  const partidasDoPeriodo = useMemo(
+    () => todos.filter((p) => p.data >= dataInicio && p.data <= dataFimPeriodo),
+    [todos, dataInicio, dataFimPeriodo],
   );
 
-  /**
-   * Composição em regime de caixa: "Entradas" é o dinheiro que efetivamente
-   * entrou no banco/aplicações (mesma origem da Conciliação de Caixa do
-   * Resumo). "Adiantamentos"/"Despesas"/"Investimentos" vêm do rastreamento
-   * de pagamento até a categoria contábil original — não do que foi
-   * reconhecido por competência, mas do que foi de fato pago, na data em
-   * que o dinheiro saiu. Por isso a soma fecha com Saldo Bancário + Saldo
-   * de Aplicações Bancárias, ao contrário do regime de competência.
-   */
-  const caixa = useMemo(() => movimentoCaixa(posicao, empresa), [posicao, empresa]);
+  const posicaoAntes = useMemo(() => todos.filter((p) => p.data < dataInicio), [todos, dataInicio]);
+  const posicaoFim = useMemo(
+    () => todos.filter((p) => p.data <= dataFimPeriodo),
+    [todos, dataFimPeriodo],
+  );
+
+  const saldoAnterior = saldoBancario(posicaoAntes, empresa) + saldoAplicacoes(posicaoAntes, empresa);
+  const banco = saldoBancario(posicaoFim, empresa);
+  const aplicacoes = saldoAplicacoes(posicaoFim, empresa);
+
+  const caixa = useMemo(() => movimentoCaixa(partidasDoPeriodo, empresa), [partidasDoPeriodo, empresa]);
   const rastreados = useMemo(
-    () => montarBlocosCaixa(semDados ? [] : todos, empresa, corte),
-    [todos, empresa, corte, semDados],
+    () => montarBlocosCaixa(todos, empresa, dataFimPeriodo, dataInicio),
+    [todos, empresa, dataFimPeriodo, dataInicio],
   );
   const despesasFinanceiras = caixa.saidas.find((l) => l.rotulo === 'Despesas Financeiras');
   const blocos: BlocoCaixaCalculado[] = useMemo(() => {
@@ -75,17 +78,38 @@ export function BalanceteFinanceiro({
     return [entradas, ...comDespesasFinanceiras];
   }, [caixa, rastreados, despesasFinanceiras]);
 
+  const resultadoPeriodo = useMemo(() => {
+    const [entradasBloco, ...saidas] = blocos;
+    return soma([entradasBloco?.total ?? 0, ...saidas.map((b) => -b.total)]);
+  }, [blocos]);
+
   const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const saldoPagar = useMemo(
-    () => (semDados ? 0 : soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo))),
-    [acumulado, corte, semDados],
+    () => soma(titulosEmAbertoEm(acumulado.titulos, dataFimPeriodo).map((t) => t.saldo)),
+    [acumulado, dataFimPeriodo],
   );
-  const banco = useMemo(() => saldoBancario(posicao, empresa), [posicao, empresa]);
-  const aplicacoes = useMemo(() => saldoAplicacoes(posicao, empresa), [posicao, empresa]);
 
   return (
     <div className="colunas colunas--balancete">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="cartao">
+          <p className="cartao__titulo">Período</p>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <label className="filtro-periodo">
+              <span>De</span>
+              <input type="month" value={mesInicio} onChange={(e) => setMesInicio(e.target.value)} />
+            </label>
+            <label className="filtro-periodo">
+              <span>Até</span>
+              <input type="month" value={mesFim} onChange={(e) => setMesFim(e.target.value)} />
+            </label>
+          </div>
+          <div className="grupo__total" style={{ marginTop: 12 }}>
+            <span>Saldo Anterior · {dataBR(dataInicio)}</span>
+            <span>{brl(saldoAnterior)}</span>
+          </div>
+        </div>
+
         {blocos.map((bloco) => (
           <div className="grupo" key={bloco.titulo}>
             <div className="grupo__cabecalho">
@@ -107,6 +131,21 @@ export function BalanceteFinanceiro({
             </div>
           </div>
         ))}
+
+        <div className="cartao">
+          <div className="grupo__total">
+            <span>Resultado do Período</span>
+            <span>{brl(resultadoPeriodo)}</span>
+          </div>
+          <div className="grupo__total" style={{ marginTop: 6 }}>
+            <span>Saldo Bancário + Aplicações · {dataBR(dataFimPeriodo)}</span>
+            <span>{brl(banco + aplicacoes)}</span>
+          </div>
+          <p className="cartao__legenda" style={{ margin: '6px 0 0' }}>
+            Saldo Anterior + Resultado do Período = Saldo Bancário + Saldo de Aplicações
+            Bancárias no fim do período.
+          </p>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -135,11 +174,12 @@ export function BalanceteFinanceiro({
         <div className="aviso">
           <div>
             <strong>Regime de caixa</strong>
-            Ao contrário das outras abas, aqui cada pagamento é rastreado até a
-            categoria de origem (não o que foi lançado por competência, mas o que
-            de fato saiu do caixa) — por isso a soma fecha com Saldo Bancário +
-            Saldo de Aplicações Bancárias acima. As regras de classificação ficam
-            em <code>src/lib/empresas.ts</code>, por empresa.
+            Os blocos acima mostram o movimento financeiro do período selecionado —
+            cada pagamento é rastreado até a categoria de origem (não o que foi
+            lançado por competência, mas o que de fato saiu do caixa naquele
+            intervalo). Os KPIs de saldo à direita são a posição no fim do período,
+            usada para a comparação acima. As regras de classificação ficam em
+            {' '}<code>src/lib/empresas.ts</code>, por empresa.
           </div>
         </div>
       </div>

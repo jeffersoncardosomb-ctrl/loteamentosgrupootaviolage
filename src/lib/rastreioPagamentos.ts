@@ -164,16 +164,22 @@ const blocosRastreados = (empresa: Empresa): BlocoBalancete[] =>
   empresa.blocos.filter((b) => ['Adiantamentos', 'Despesas', 'Investimentos'].includes(b.titulo));
 
 /**
- * Agrupa os movimentos rastreados por bloco de origem e categoria, para a
- * data de corte informada (posição acumulada desde o início, igual ao
- * resto da aba Balancete Financeiro — não é fluxo do período).
+ * Agrupa os movimentos rastreados por bloco de origem e categoria, dentro
+ * do intervalo `[dataInicio, dataFim]` (extremos inclusos). `dataInicio`
+ * omitido = posição acumulada desde o início (mesmo comportamento de
+ * antes, usado por `porAnoCaixa`); informado = movimento só daquele
+ * período — `rastrearPagamentos` sempre processa o razão inteiro (não dá
+ * pra restringir a busca de baixas parceladas sem quebrar o rastreamento),
+ * só o resultado final é filtrado pelo intervalo.
  */
 export function montarBlocosCaixa(
   todos: Partida[],
   empresa: Empresa,
-  corte: string,
+  dataFim: string,
+  dataInicio?: string,
 ): BlocoCaixaCalculado[] {
-  const movimentos = rastrearPagamentos(todos, empresa).filter((m) => m.data <= corte);
+  const movimentos = rastrearPagamentos(todos, empresa)
+    .filter((m) => m.data <= dataFim && (!dataInicio || m.data >= dataInicio));
 
   const porCategoria = new Map<string, { valor: number; quantidade: number }>();
   for (const m of movimentos) {
