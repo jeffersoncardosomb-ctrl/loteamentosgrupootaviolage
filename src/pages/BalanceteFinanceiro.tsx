@@ -5,7 +5,7 @@ import { conciliar } from '../lib/conciliacao';
 import { brl, dataBR, fimDoMes, titulosEmAbertoEm } from '../lib/contasPagar';
 import { soma } from '../lib/dados';
 import type { Empresa } from '../lib/empresas';
-import { montarBlocosCaixa, porAnoCaixa, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
+import { montarBlocosCaixa, porAnoCaixa, OUTRAS_ENTRADAS, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
