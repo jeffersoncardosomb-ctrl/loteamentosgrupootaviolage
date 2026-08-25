@@ -84,7 +84,5 @@ export const importarBaseHistorica = createServerFn({ method: 'POST' })
 
 export const souAdmin = createServerFn({ method: 'GET' })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc('is_admin');
-    return { admin: data === true };
-  });
+  .handler(async ({ context }) => ({ admin: await ehAdmin(context) }));
+
