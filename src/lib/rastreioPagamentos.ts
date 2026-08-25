@@ -198,17 +198,12 @@ export function montarBlocosCaixa(
   });
 
   /**
-   * "Não Classificado" vira um ajuste de reconciliação — a diferença entre
-   * o que de fato saiu do caixa (`movimentoCaixa`, direto do razão
-   * banco/aplicações, sem depender de rastreamento) e o que os blocos
-   * acima conseguiram categorizar. Isso fecha por construção, mesmo
-   * quando o rastreamento tem um buraco que nem chega a virar um item
-   * `NAO_CLASSIFICADO` (lançamento de 3+ pernas, por exemplo) — ou quando
-   * ele acerta demais (atribui a uma categoria mais do que realmente saiu,
-   * em algum caso raro de conciliação de título) — sempre existe algum
-   * padrão de lançamento incomum que não foi mapeado ainda, e a soma
-   * precisa fechar de qualquer jeito, não só quando os casos conhecidos
-   * cobrem tudo.
+   * O resíduo de reconciliação — a diferença entre o que de fato saiu do
+   * caixa (`movimentoCaixa`, direto do razão banco/aplicações) e o que os
+   * blocos acima conseguiram categorizar. Em vez de um bloco ambíguo de
+   * "Não Classificado", ele é apresentado pelo sentido do dinheiro:
+   * sobra de saída → "Outras Saídas"; sobra negativa (o rastreamento
+   * atribuiu mais do que realmente saiu) → "Outras Entradas".
    */
   const partidasDoPeriodo = todos.filter((p) => p.data <= dataFim && (!dataInicio || p.data >= dataInicio));
   const pagamentosReais = movimentoCaixa(partidasDoPeriodo, empresa).saidas
@@ -218,15 +213,18 @@ export function montarBlocosCaixa(
 
   if (ajuste !== 0) {
     const itensNaoRastreados = porCategoria.get(NAO_CLASSIFICADO)?.quantidade ?? 0;
+    const titulo = ajuste > 0 ? OUTRAS_SAIDAS : OUTRAS_ENTRADAS;
+    const valor = Math.abs(ajuste);
     blocos.push({
-      titulo: 'Não Classificado',
-      linhas: [{ rotulo: NAO_CLASSIFICADO, valor: ajuste, quantidade: itensNaoRastreados }],
-      total: ajuste,
+      titulo,
+      linhas: [{ rotulo: titulo, valor, quantidade: itensNaoRastreados }],
+      total: valor,
     });
   }
 
   return blocos;
 }
+
 
 /** "Entradas e Saídas por Ano", em regime de caixa. */
 export function porAnoCaixa(todos: Partida[], empresa: Empresa) {
