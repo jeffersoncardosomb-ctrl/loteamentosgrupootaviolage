@@ -67,6 +67,7 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
 
   return (
     <div className="app">
+     <div className="cabecalho-fixo">
       <header className="topo">
         <div className="marca">
           <img className="marca__logo" src={logoLage.url} alt="Grupo Otávio Lage" />
@@ -120,6 +121,7 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
           </button>
         ))}
       </nav>
+     </div>
 
       <main className="painel">
         {!integridade.fecha && (
