@@ -168,6 +168,9 @@ function UploadPage() {
         </button>
       </div>
 
+      <LinksDosSocios />
+
+
       {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
 
       {resumo && (
