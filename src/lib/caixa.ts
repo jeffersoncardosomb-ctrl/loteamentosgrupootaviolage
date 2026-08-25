@@ -34,6 +34,10 @@ const ehGenerico = (complemento: string) => {
   return c === '' || /^CONTA:\s*[\d.\-]*$/i.test(c);
 };
 
+/** Tarifas, IOF, IRRF e provisões sobre aplicação — custo do próprio banco, não uma despesa rastreável até uma categoria. */
+export const ehDespesaFinanceira = (p: Partida) =>
+  p.saldo < 0 && /TARIFA|TAR\s|DEBITO PACOTE|\bIOF\b|\bIRRF\b|PROVISAO/i.test(semDocumento(p.complemento));
+
 /**
  * Classifica um lançamento de banco/aplicações em uma categoria de caixa.
  * Ordem importa — a primeira regra que casar vence. Ajuste aqui se
@@ -46,7 +50,7 @@ function categoria(p: Partida): CategoriaCaixa {
     if (ehGenerico(c)) return 'Recebimentos a Identificar';
     return 'Recebimentos';
   }
-  if (/TARIFA|TAR\s|DEBITO PACOTE|\bIOF\b|\bIRRF\b|PROVISAO/i.test(c)) return 'Despesas Financeiras';
+  if (ehDespesaFinanceira(p)) return 'Despesas Financeiras';
   return 'Pagamentos';
 }
 

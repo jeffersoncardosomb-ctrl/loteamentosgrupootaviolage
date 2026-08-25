@@ -1,9 +1,11 @@
-import { useMemo, useState } from 'react';
-import { montarBalancete, porAno, saldoAplicacoes, saldoBancario } from '../lib/balancete';
+import { useMemo } from 'react';
+import { saldoAplicacoes, saldoBancario } from '../lib/balancete';
+import { movimentoCaixa } from '../lib/caixa';
 import { conciliar } from '../lib/conciliacao';
 import { brl, titulosEmAbertoEm } from '../lib/contasPagar';
 import { soma } from '../lib/dados';
 import type { Empresa } from '../lib/empresas';
+import { montarBlocosCaixa, porAnoCaixa, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
@@ -15,7 +17,7 @@ export function BalanceteFinanceiro({
   corte: string;
   empresa: Empresa;
 }) {
-  const serie = useMemo(() => porAno(todos, empresa), [todos, empresa]);
+  const serie = useMemo(() => porAnoCaixa(todos, empresa), [todos, empresa]);
 
   /**
    * O balancete é posição (o quanto existe naquela data), não movimentação
@@ -34,7 +36,45 @@ export function BalanceteFinanceiro({
     () => (semDados ? [] : todos.filter((p) => p.data <= corte)),
     [todos, corte, semDados],
   );
-  const blocos = useMemo(() => montarBalancete(posicao, empresa), [posicao, empresa]);
+
+  /**
+   * Composição em regime de caixa: "Entradas" é o dinheiro que efetivamente
+   * entrou no banco/aplicações (mesma origem da Conciliação de Caixa do
+   * Resumo). "Adiantamentos"/"Despesas"/"Investimentos" vêm do rastreamento
+   * de pagamento até a categoria contábil original — não do que foi
+   * reconhecido por competência, mas do que foi de fato pago, na data em
+   * que o dinheiro saiu. Por isso a soma fecha com Saldo Bancário + Saldo
+   * de Aplicações Bancárias, ao contrário do regime de competência.
+   */
+  const caixa = useMemo(() => movimentoCaixa(posicao, empresa), [posicao, empresa]);
+  const rastreados = useMemo(
+    () => montarBlocosCaixa(semDados ? [] : todos, empresa, corte),
+    [todos, empresa, corte, semDados],
+  );
+  const despesasFinanceiras = caixa.saidas.find((l) => l.rotulo === 'Despesas Financeiras');
+  const blocos: BlocoCaixaCalculado[] = useMemo(() => {
+    const entradas: BlocoCaixaCalculado = {
+      titulo: 'Entradas',
+      linhas: caixa.entradas,
+      total: caixa.totalEntradas,
+    };
+    const comDespesasFinanceiras = rastreados.map((bloco) => {
+      if (bloco.titulo !== 'Despesas' || !despesasFinanceiras || despesasFinanceiras.valor === 0) {
+        return bloco;
+      }
+      return {
+        ...bloco,
+        linhas: [...bloco.linhas, {
+          rotulo: 'Despesas Financeiras',
+          valor: despesasFinanceiras.valor,
+          quantidade: despesasFinanceiras.quantidade,
+        }],
+        total: soma([bloco.total, despesasFinanceiras.valor]),
+      };
+    });
+    return [entradas, ...comDespesasFinanceiras];
+  }, [caixa, rastreados, despesasFinanceiras]);
+
   const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const saldoPagar = useMemo(
     () => (semDados ? 0 : soma(titulosEmAbertoEm(acumulado.titulos, corte).map((t) => t.saldo))),
@@ -42,13 +82,6 @@ export function BalanceteFinanceiro({
   );
   const banco = useMemo(() => saldoBancario(posicao, empresa), [posicao, empresa]);
   const aplicacoes = useMemo(() => saldoAplicacoes(posicao, empresa), [posicao, empresa]);
-  const [abertos, setAbertos] = useState<Set<string>>(new Set());
-
-  const alternar = (chave: string) => {
-    const novo = new Set(abertos);
-    novo.has(chave) ? novo.delete(chave) : novo.add(chave);
-    setAbertos(novo);
-  };
 
   return (
     <div className="colunas colunas--balancete">
@@ -59,37 +92,15 @@ export function BalanceteFinanceiro({
               <span>{bloco.titulo}</span>
               <span>Valor (R$)</span>
             </div>
-            {bloco.linhas.map((linha) => {
-              const chave = `${bloco.titulo}|${linha.rotulo}`;
-              const aberto = abertos.has(chave);
-              return (
-                <div key={chave}>
-                  <div className="grupo__linha">
-                    <span className="grupo__rotulo">
-                      <button
-                        type="button"
-                        onClick={() => alternar(chave)}
-                        aria-expanded={aberto}
-                        aria-label={`${aberto ? 'Recolher' : 'Expandir'} ${linha.rotulo}`}
-                      >
-                        {aberto ? '−' : '+'}
-                      </button>
-                      {linha.rotulo}
-                    </span>
-                    <span className="grupo__valor">{brl(linha.valor)}</span>
-                  </div>
-                  {aberto && linha.detalhes.map((d) => (
-                    <div className="grupo__detalhe" key={d.conta}>
-                      <span>{d.conta} · {d.nome}</span>
-                      <span>{brl(d.valor)}</span>
-                    </div>
-                  ))}
-                  {aberto && linha.detalhes.length === 0 && (
-                    <div className="grupo__detalhe"><span>Sem saldo na data selecionada</span><span>—</span></div>
-                  )}
-                </div>
-              );
-            })}
+            {bloco.linhas.map((linha) => (
+              <div className="grupo__linha" key={linha.rotulo}>
+                <span className="grupo__rotulo">
+                  {linha.rotulo}{' '}
+                  <span style={{ color: 'var(--texto-fraco)', fontWeight: 400 }}>· {linha.quantidade}</span>
+                </span>
+                <span className="grupo__valor">{brl(linha.valor)}</span>
+              </div>
+            ))}
             <div className="grupo__total">
               <span>Total</span>
               <span>{brl(bloco.total)}</span>
@@ -123,10 +134,12 @@ export function BalanceteFinanceiro({
 
         <div className="aviso">
           <div>
-            <strong>Classificação editável</strong>
-            As linhas acima são montadas por prefixo de conta em
-            {' '}<code>src/lib/empresas.ts</code>, por empresa. Ajuste ali para casar
-            exatamente com as medidas do Power BI — o resto do painel acompanha sozinho.
+            <strong>Regime de caixa</strong>
+            Ao contrário das outras abas, aqui cada pagamento é rastreado até a
+            categoria de origem (não o que foi lançado por competência, mas o que
+            de fato saiu do caixa) — por isso a soma fecha com Saldo Bancário +
+            Saldo de Aplicações Bancárias acima. As regras de classificação ficam
+            em <code>src/lib/empresas.ts</code>, por empresa.
           </div>
         </div>
       </div>
