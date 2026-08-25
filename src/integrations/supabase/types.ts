@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      empresa_acesso: {
+        Row: {
+          atualizado_em: string
+          criado_em: string
+          empresa_id: string
+          id: string
+          token: string
+        }
+        Insert: {
+          atualizado_em?: string
+          criado_em?: string
+          empresa_id: string
+          id?: string
+          token: string
+        }
+        Update: {
+          atualizado_em?: string
+          criado_em?: string
+          empresa_id?: string
+          id?: string
+          token?: string
+        }
+        Relationships: []
+      }
       partidas: {
         Row: {
           complemento: string

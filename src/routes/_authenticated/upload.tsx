@@ -1,14 +1,17 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
 import { supabase } from '@/integrations/supabase/client';
 import { lerPlanilha } from '@/lib/planilha';
-import { EMPRESA_PADRAO, EMPRESAS } from '@/lib/empresas';
+import { EMPRESA_PADRAO, EMPRESAS, empresaPorId } from '@/lib/empresas';
 import {
   importarBaseHistorica,
   importarPartidas,
+  listarAcessos,
+  regenerarAcesso,
   souAdmin,
 } from '@/lib/partidas.functions';
+
 
 const title = 'Enviar base contábil — Painel LAGE';
 const description = 'Envio mensal da planilha de lançamentos que alimenta o Painel LAGE.';
@@ -168,6 +171,9 @@ function UploadPage() {
         </button>
       </div>
 
+      <LinksDosSocios />
+
+
       {erro && <p className="mt-4 text-sm text-destructive">{erro}</p>}
 
       {resumo && (
@@ -180,6 +186,96 @@ function UploadPage() {
           <Link to="/" className="mt-3 inline-block underline">Ver o painel</Link>
         </div>
       )}
+    </div>
+  );
+}
+
+interface Acesso {
+  empresa_id: string;
+  token: string;
+  atualizado_em: string;
+}
+
+function LinksDosSocios() {
+  const carregar = useServerFn(listarAcessos);
+  const regenerar = useServerFn(regenerarAcesso);
+  const [acessos, setAcessos] = useState<Acesso[] | null>(null);
+  const [erro, setErro] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState<string | null>(null);
+  const [ocupado, setOcupado] = useState<string | null>(null);
+
+  const buscar = useCallback(() => {
+    carregar()
+      .then((r) => setAcessos(r as Acesso[]))
+      .catch((e) => setErro(e instanceof Error ? e.message : 'Falha ao carregar os links.'));
+  }, [carregar]);
+
+  useEffect(buscar, [buscar]);
+
+  const url = (token: string) =>
+    `${typeof window === 'undefined' ? '' : window.location.origin}/p/${token}`;
+
+  async function copiar(token: string) {
+    await navigator.clipboard.writeText(url(token));
+    setCopiado(token);
+    setTimeout(() => setCopiado(null), 2000);
+  }
+
+  async function novo(empresaId: string) {
+    if (!window.confirm('Gerar um novo código? O link atual deixa de funcionar imediatamente.')) {
+      return;
+    }
+    setOcupado(empresaId);
+    try {
+      await regenerar({ data: { empresaId } });
+      buscar();
+    } catch (e) {
+      setErro(e instanceof Error ? e.message : 'Falha ao gerar o novo código.');
+    } finally {
+      setOcupado(null);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-border bg-card p-5">
+      <h2 className="text-sm font-semibold text-foreground">Links dos sócios</h2>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Cada empresa tem um endereço próprio e secreto. Quem abre o link vê apenas o painel
+        daquela empresa, sem seletor e sem acesso à área do administrador.
+      </p>
+
+      {erro && <p className="mt-3 text-sm text-destructive">{erro}</p>}
+      {!acessos && !erro && <p className="mt-3 text-sm text-muted-foreground">Carregando…</p>}
+
+      <ul className="mt-3 space-y-3">
+        {(acessos ?? []).map((a) => (
+          <li key={a.empresa_id} className="rounded-lg border border-border p-3">
+            <p className="text-sm font-medium text-foreground">
+              {empresaPorId(a.empresa_id).apelido}
+            </p>
+            <p className="mt-1 break-all font-mono text-xs text-muted-foreground">
+              {url(a.token)}
+            </p>
+            <div className="mt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => copiar(a.token)}
+                className="rounded-md border border-input px-3 py-1.5 text-xs font-medium text-foreground"
+              >
+                {copiado === a.token ? 'Copiado!' : 'Copiar link'}
+              </button>
+              <button
+                type="button"
+                onClick={() => novo(a.empresa_id)}
+                disabled={ocupado === a.empresa_id}
+                className="rounded-md border border-input px-3 py-1.5 text-xs font-medium text-foreground disabled:opacity-60"
+              >
+                {ocupado === a.empresa_id ? 'Gerando…' : 'Gerar novo código'}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

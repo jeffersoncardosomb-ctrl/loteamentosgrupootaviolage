@@ -19,7 +19,7 @@ const MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-export default function App({ base, empresaId }: { base: Partida[]; empresaId: string }) {
+export default function App({ base, empresaId, empresaFixa = false }: { base: Partida[]; empresaId: string; empresaFixa?: boolean }) {
   const navigate = useNavigate();
   const empresa = useMemo(() => empresaPorId(empresaId), [empresaId]);
   const todos = useMemo(() => prepararPartidas(base, empresa), [base, empresa]);
@@ -74,12 +74,19 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
         </div>
 
         <div className="filtros">
-          <label className="filtro">
-            <span>Empresa</span>
-            <select value={empresa.id} onChange={(e) => trocarEmpresa(e.target.value)}>
-              {EMPRESAS.map((e) => <option key={e.id} value={e.id}>{e.apelido}</option>)}
-            </select>
-          </label>
+          {empresaFixa ? (
+            <div className="filtro">
+              <span>Empresa</span>
+              <strong className="filtro__valor">{empresa.apelido}</strong>
+            </div>
+          ) : (
+            <label className="filtro">
+              <span>Empresa</span>
+              <select value={empresa.id} onChange={(e) => trocarEmpresa(e.target.value)}>
+                {EMPRESAS.map((e) => <option key={e.id} value={e.id}>{e.apelido}</option>)}
+              </select>
+            </label>
+          )}
           <label className="filtro">
             <span>Ano</span>
             <select value={ano} onChange={(e) => setAno(e.target.value)}>
@@ -105,8 +112,9 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
           >
             Resumo
           </button>
-          <Link to="/upload" className="link-admin">Admin</Link>
+          {!empresaFixa && <Link to="/upload" className="link-admin">Admin</Link>}
         </div>
+
       </header>
 
       <nav className="abas" aria-label="Seções do painel">

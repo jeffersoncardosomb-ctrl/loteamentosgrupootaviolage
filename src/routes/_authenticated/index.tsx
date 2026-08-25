@@ -15,22 +15,20 @@ const partidasQuery = (empresaId: string) =>
     queryFn: () => listarPartidas({ data: { empresaId } }),
   });
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   validateSearch: (search: Record<string, unknown>): { empresa?: string } => {
     const empresa = search['empresa'];
     return typeof empresa === 'string' ? { empresa } : {};
   },
-  loaderDeps: ({ search }) => ({ empresaId: search.empresa ?? EMPRESA_PADRAO.id }),
   head: () => ({
     meta: [
       { title },
       { name: "description", content: description },
+      { name: "robots", content: "noindex" },
       { property: "og:title", content: title },
       { property: "og:description", content: description },
     ],
   }),
-  loader: ({ context, deps }) =>
-    context.queryClient.ensureQueryData(partidasQuery(deps.empresaId)),
   component: Pagina,
 });
 
