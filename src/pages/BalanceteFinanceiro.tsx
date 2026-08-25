@@ -5,7 +5,7 @@ import { conciliar } from '../lib/conciliacao';
 import { brl, dataBR, fimDoMes, titulosEmAbertoEm } from '../lib/contasPagar';
 import { soma } from '../lib/dados';
 import type { Empresa } from '../lib/empresas';
-import { montarBlocosCaixa, porAnoCaixa, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
+import { montarBlocosCaixa, porAnoCaixa, OUTRAS_ENTRADAS, type BlocoCaixaCalculado } from '../lib/rastreioPagamentos';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
@@ -78,10 +78,15 @@ export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empr
     return [entradas, ...comDespesasFinanceiras];
   }, [caixa, rastreados, despesasFinanceiras]);
 
-  const resultadoPeriodo = useMemo(() => {
-    const [entradasBloco, ...saidas] = blocos;
-    return soma([entradasBloco?.total ?? 0, ...saidas.map((b) => -b.total)]);
-  }, [blocos]);
+  const resultadoPeriodo = useMemo(
+    () =>
+      soma(
+        blocos.map((b) =>
+          b.titulo === 'Entradas' || b.titulo === OUTRAS_ENTRADAS ? b.total : -b.total,
+        ),
+      ),
+    [blocos],
+  );
 
   const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const saldoPagar = useMemo(
@@ -178,12 +183,12 @@ export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empr
             cada pagamento é rastreado até a categoria de origem (não o que foi
             lançado por competência, mas o que de fato saiu do caixa naquele
             intervalo). Os KPIs de saldo à direita são a posição no fim do período,
-            usada para a comparação acima. "Não Classificado" é um ajuste de
-            reconciliação — a diferença entre o que realmente saiu do caixa e o que
-            foi possível categorizar; pode aparecer negativo, quando o rastreamento
-            atribuiu a uma categoria mais do que de fato saiu (lançamentos incomuns,
-            com mais de duas pernas). Garante que a soma sempre feche com o Saldo
-            Bancário + Aplicações. As regras de classificação ficam em
+            usada para a comparação acima. "Outras Saídas" e "Outras Entradas" são o
+            ajuste de reconciliação — a diferença entre o que realmente passou pelo
+            caixa e o que foi possível categorizar; aparece como entrada quando o
+            rastreamento atribuiu a alguma categoria mais do que de fato saiu
+            (lançamentos incomuns, com mais de duas pernas). Garante que a soma sempre
+            feche com o Saldo Bancário + Aplicações. As regras de classificação ficam em
             {' '}<code>src/lib/empresas.ts</code>, por empresa.
           </div>
         </div>
