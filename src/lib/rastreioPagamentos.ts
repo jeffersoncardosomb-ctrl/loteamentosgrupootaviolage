@@ -197,12 +197,31 @@ export function montarBlocosCaixa(
     return { titulo: bloco.titulo, linhas, total: soma(linhas.map((l) => l.valor)) };
   });
 
-  const naoClassificado = porCategoria.get(NAO_CLASSIFICADO);
-  if (naoClassificado && naoClassificado.valor !== 0) {
+  /**
+   * "Não Classificado" vira um ajuste de reconciliação — a diferença entre
+   * o que de fato saiu do caixa (`movimentoCaixa`, direto do razão
+   * banco/aplicações, sem depender de rastreamento) e o que os blocos
+   * acima conseguiram categorizar. Isso fecha por construção, mesmo
+   * quando o rastreamento tem um buraco que nem chega a virar um item
+   * `NAO_CLASSIFICADO` (lançamento de 3+ pernas, por exemplo) — ou quando
+   * ele acerta demais (atribui a uma categoria mais do que realmente saiu,
+   * em algum caso raro de conciliação de título) — sempre existe algum
+   * padrão de lançamento incomum que não foi mapeado ainda, e a soma
+   * precisa fechar de qualquer jeito, não só quando os casos conhecidos
+   * cobrem tudo.
+   */
+  const partidasDoPeriodo = todos.filter((p) => p.data <= dataFim && (!dataInicio || p.data >= dataInicio));
+  const pagamentosReais = movimentoCaixa(partidasDoPeriodo, empresa).saidas
+    .find((l) => l.rotulo === 'Pagamentos')?.valor ?? 0;
+  const totalCategorizado = soma(blocos.map((b) => b.total));
+  const ajuste = arredonda(pagamentosReais - totalCategorizado);
+
+  if (ajuste !== 0) {
+    const itensNaoRastreados = porCategoria.get(NAO_CLASSIFICADO)?.quantidade ?? 0;
     blocos.push({
       titulo: 'Não Classificado',
-      linhas: [{ rotulo: NAO_CLASSIFICADO, valor: naoClassificado.valor, quantidade: naoClassificado.quantidade }],
-      total: naoClassificado.valor,
+      linhas: [{ rotulo: NAO_CLASSIFICADO, valor: ajuste, quantidade: itensNaoRastreados }],
+      total: ajuste,
     });
   }
 

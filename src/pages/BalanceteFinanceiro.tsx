@@ -178,7 +178,12 @@ export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empr
             cada pagamento é rastreado até a categoria de origem (não o que foi
             lançado por competência, mas o que de fato saiu do caixa naquele
             intervalo). Os KPIs de saldo à direita são a posição no fim do período,
-            usada para a comparação acima. As regras de classificação ficam em
+            usada para a comparação acima. "Não Classificado" é um ajuste de
+            reconciliação — a diferença entre o que realmente saiu do caixa e o que
+            foi possível categorizar; pode aparecer negativo, quando o rastreamento
+            atribuiu a uma categoria mais do que de fato saiu (lançamentos incomuns,
+            com mais de duas pernas). Garante que a soma sempre feche com o Saldo
+            Bancário + Aplicações. As regras de classificação ficam em
             {' '}<code>src/lib/empresas.ts</code>, por empresa.
           </div>
         </div>
