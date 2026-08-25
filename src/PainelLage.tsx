@@ -147,7 +147,7 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
             empresa={empresa}
           />
         ) : aba === 'Balancete Financeiro' ? (
-          <BalanceteFinanceiro partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
+          <BalanceteFinanceiro key={empresa.id} todos={todos} empresa={empresa} />
         ) : aba === 'Contas Pagas e a Pagar' ? (
           <ContasPagasEPagar partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
         ) : (
