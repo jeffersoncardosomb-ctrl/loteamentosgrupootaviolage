@@ -6,7 +6,6 @@ export type CategoriaCaixa =
   | 'Ganhos de Aplicações Financeiras'
   | 'Recebimento de Aportes'
   | 'Recebimentos'
-  | 'Recebimentos a Identificar'
   | 'Pagamentos'
   | 'Despesas Financeiras';
 
@@ -28,12 +27,6 @@ const semDocumento = (complemento: string) => (complemento ?? '').replace(/^\d+\
 /** Transferência entre banco e aplicações — mesmo valor debitado de um lado e creditado do outro. */
 const ehTransferenciaInterna = (complemento: string) =>
   /^(APLICACAO|RESGATE\s*(DE\s*)?APLICACAO)\b/i.test(semDocumento(complemento));
-
-/** Entrada sem nome nem natureza no histórico — não dá para saber a origem. */
-const ehGenerico = (complemento: string) => {
-  const c = semDocumento(complemento);
-  return c === '' || /^CONTA:\s*[\d.\-]*$/i.test(c);
-};
 
 /** Tarifas, IOF, IRRF e provisões sobre aplicação — custo do próprio banco, não uma despesa rastreável até uma categoria. */
 export const ehDespesaFinanceira = (p: Partida) =>
@@ -74,7 +67,6 @@ function categoria(p: Partida, porChave: Map<string, Partida[]>, empresa: Empres
   if (p.saldo > 0) {
     if (/GANHO/i.test(c)) return 'Ganhos de Aplicações Financeiras';
     if (ehIntegralizacaoDeCapital(p, porChave, empresa)) return 'Recebimento de Aportes';
-    if (ehGenerico(c)) return 'Recebimentos a Identificar';
     return 'Recebimentos';
   }
   if (ehDespesaFinanceira(p)) return 'Despesas Financeiras';
@@ -117,7 +109,7 @@ export function movimentoCaixa(partidas: Partida[], empresa: Empresa): Movimento
   };
 
   const entradas = (
-    ['Ganhos de Aplicações Financeiras', 'Recebimento de Aportes', 'Recebimentos', 'Recebimentos a Identificar'] as const
+    ['Ganhos de Aplicações Financeiras', 'Recebimento de Aportes', 'Recebimentos'] as const
   ).map(linha);
   const saidas = (['Pagamentos', 'Despesas Financeiras'] as const).map(linha);
 
