@@ -58,6 +58,13 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
     return fimDoMes(`${ano}-${mes}`);
   }, [todos, ano, mes]);
 
+  /** Início do período selecionado, para saldo inicial de caixa. Nulo quando o período é "todos". */
+  const inicioPeriodo = useMemo(() => {
+    if (ano === 'todos') return null;
+    if (mes === 'todos') return `${ano}-01-01`;
+    return `${ano}-${mes}-01`;
+  }, [ano, mes]);
+
   return (
     <div className="app">
       <header className="topo">
@@ -135,7 +142,10 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
         )}
 
         {resumo ? (
-          <Resumo partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
+          <Resumo
+            partidas={partidas} todos={todos} corte={corte} inicioPeriodo={inicioPeriodo}
+            empresa={empresa}
+          />
         ) : aba === 'Balancete Financeiro' ? (
           <BalanceteFinanceiro partidas={partidas} todos={todos} corte={corte} empresa={empresa} />
         ) : aba === 'Contas Pagas e a Pagar' ? (

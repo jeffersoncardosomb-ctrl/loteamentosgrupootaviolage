@@ -1,18 +1,21 @@
 import { useMemo } from 'react';
-import { montarBalancete, saldoBancario } from '../lib/balancete';
+import { montarBalancete, saldoAplicacoes, saldoBancario } from '../lib/balancete';
 import { conciliar } from '../lib/conciliacao';
 import { montarQuadroAportes } from '../lib/aportes';
+import { movimentoCaixa } from '../lib/caixa';
 import { brl, dataBR, titulosEmAbertoEm } from '../lib/contasPagar';
+import { soma } from '../lib/dados';
 import type { Empresa } from '../lib/empresas';
 import type { Partida } from '../lib/types';
 import { GraficoBarras } from '../components/Graficos';
 
 export function Resumo({
-  partidas, todos, corte, empresa,
+  partidas, todos, corte, inicioPeriodo, empresa,
 }: {
   partidas: Partida[];
   todos: Partida[];
   corte: string;
+  inicioPeriodo: string | null;
   empresa: Empresa;
 }) {
   const blocos = useMemo(() => montarBalancete(partidas, empresa), [partidas, empresa]);
@@ -20,12 +23,31 @@ export function Resumo({
   const aportes = useMemo(() => montarQuadroAportes(todos, empresa), [todos, empresa]);
   const emAberto = useMemo(() => titulosEmAbertoEm(acumulado.titulos, corte), [acumulado, corte]);
 
+  const posicao = useMemo(() => todos.filter((p) => p.data <= corte), [todos, corte]);
+  const banco = saldoBancario(posicao, empresa);
+  const aplicacoes = saldoAplicacoes(posicao, empresa);
+
+  /**
+   * Conciliação de caixa: ao contrário de Entradas/Despesas/Investimentos
+   * (regime de competência, podem incluir contas a receber e provisões que
+   * ainda não viraram caixa), aqui a origem é só o próprio livro banco +
+   * aplicações — por isso fecha exatamente com a posição de caixa.
+   */
+  const posicaoAntes = useMemo(
+    () => (inicioPeriodo ? todos.filter((p) => p.data < inicioPeriodo) : []),
+    [todos, inicioPeriodo],
+  );
+  const saldoInicial = inicioPeriodo
+    ? saldoBancario(posicaoAntes, empresa) + saldoAplicacoes(posicaoAntes, empresa)
+    : 0;
+  const caixa = useMemo(() => movimentoCaixa(partidas, empresa), [partidas, empresa]);
+  const saldoFinalCaixa = soma([saldoInicial, caixa.totalEntradas, -caixa.totalSaidas]);
+
   const valor = (t: string) => blocos.find((b) => b.titulo === t)?.total ?? 0;
   const entradas = valor('Entradas');
   const despesas = valor('Despesas');
   const investimentos = valor('Investimentos');
-  const banco = saldoBancario(partidas, empresa);
-  const totalAberto = emAberto.reduce((a, t) => a + t.saldo, 0);
+  const totalAberto = soma(emAberto.map((t) => t.saldo));
 
   return (
     <>
@@ -59,17 +81,84 @@ export function Resumo({
         </div>
         <div className="kpi">
           <div className="kpi__valor">{brl(banco)}</div>
-          <div className="kpi__rotulo">Saldo bancário</div>
+          <div className="kpi__rotulo">Saldo Bancário</div>
         </div>
         <div className="kpi">
-          <div className="kpi__valor kpi__valor--verde">
-            {brl(aportes.totais.totalInvestido)}
+          <div className="kpi__valor">{brl(aplicacoes)}</div>
+          <div className="kpi__rotulo">Saldo de Aplicações Bancárias</div>
+        </div>
+      </div>
+
+      <div className="kpi">
+        <div className="kpi__valor kpi__valor--verde">
+          {brl(aportes.totais.totalInvestido)}
+        </div>
+        <div className="kpi__rotulo">
+          Capital dos sócios · {brl(aportes.totais.aportes)} em aportes e{' '}
+          {brl(aportes.totais.afac)} em AFAC
+        </div>
+      </div>
+
+      <div className="cartao">
+        <p className="cartao__titulo">Conciliação de Caixa</p>
+        <p className="cartao__legenda">
+          {inicioPeriodo ? `${dataBR(inicioPeriodo)} a ${dataBR(corte)}` : `Desde o início até ${dataBR(corte)}`}
+          {' '}· Banco + Aplicações Financeiras
+        </p>
+
+        <div className="grupo__total" style={{ marginBottom: 12 }}>
+          <span>Saldo Caixa Inicial</span>
+          <span>{brl(saldoInicial)}</span>
+        </div>
+
+        <div className="colunas colunas--2">
+          <div className="grupo">
+            <div className="grupo__cabecalho">
+              <span>Entradas</span>
+              <span>Valor (R$)</span>
+            </div>
+            {caixa.entradas.map((l) => (
+              <div className="grupo__linha" key={l.rotulo}>
+                <span className="grupo__rotulo">
+                  {l.rotulo} <span style={{ color: 'var(--texto-fraco)', fontWeight: 400 }}>· {l.quantidade}</span>
+                </span>
+                <span className="grupo__valor">{brl(l.valor)}</span>
+              </div>
+            ))}
+            <div className="grupo__total">
+              <span>Total</span>
+              <span>{brl(caixa.totalEntradas)}</span>
+            </div>
           </div>
-          <div className="kpi__rotulo">
-            Capital dos sócios · {brl(aportes.totais.aportes)} em aportes e{' '}
-            {brl(aportes.totais.afac)} em AFAC
+
+          <div className="grupo">
+            <div className="grupo__cabecalho">
+              <span>Saídas</span>
+              <span>Valor (R$)</span>
+            </div>
+            {caixa.saidas.map((l) => (
+              <div className="grupo__linha" key={l.rotulo}>
+                <span className="grupo__rotulo">
+                  {l.rotulo} <span style={{ color: 'var(--texto-fraco)', fontWeight: 400 }}>· {l.quantidade}</span>
+                </span>
+                <span className="grupo__valor">{brl(l.valor)}</span>
+              </div>
+            ))}
+            <div className="grupo__total">
+              <span>Total</span>
+              <span>{brl(caixa.totalSaidas)}</span>
+            </div>
           </div>
         </div>
+
+        <div className="grupo__total" style={{ marginTop: 12 }}>
+          <span>Saldo Caixa Final</span>
+          <span>{brl(saldoFinalCaixa)}</span>
+        </div>
+        <p className="cartao__legenda" style={{ margin: '6px 0 0' }}>
+          Saldo Caixa Inicial + Entradas − Saídas = Saldo Bancário + Saldo de Aplicações Bancárias
+          {' '}acima.
+        </p>
       </div>
 
       <div className="colunas colunas--2">
