@@ -156,6 +156,6 @@ export default function App({ base, empresaId }: { base: Partida[]; empresaId: s
           <Aportes partidas={partidas} empresa={empresa} />
         )}
       </main>
-    </div>
+     </div>
   );
 }
