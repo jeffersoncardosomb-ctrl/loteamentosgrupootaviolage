@@ -40,6 +40,14 @@ body { margin: 0; }
 }
 
 /* -------------------------------------------------------- cabeçalho */
+.cabecalho-fixo {
+  position: sticky; top: 0; z-index: 20;
+  background-color: var(--laranja-fundo);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.32) 1px, transparent 1px);
+  background-size: 14px 14px;
+  margin: -14px clamp(10px, 2vw, 22px) 0;
+  padding: 14px clamp(10px, 2vw, 22px) 0;
+}
 .topo {
   display: flex; align-items: flex-start; gap: 22px;
   max-width: 1440px; margin: 0 auto 0;
