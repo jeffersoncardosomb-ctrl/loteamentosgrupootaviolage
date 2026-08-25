@@ -19,7 +19,7 @@ const MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-export default function App({ base, empresaId }: { base: Partida[]; empresaId: string }) {
+export default function App({ base, empresaId, empresaFixa = false }: { base: Partida[]; empresaId: string; empresaFixa?: boolean }) {
   const navigate = useNavigate();
   const empresa = useMemo(() => empresaPorId(empresaId), [empresaId]);
   const todos = useMemo(() => prepararPartidas(base, empresa), [base, empresa]);
