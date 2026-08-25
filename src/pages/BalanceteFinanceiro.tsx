@@ -190,7 +190,6 @@ export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empr
             (lançamentos incomuns, com mais de duas pernas). Garante que a soma sempre
             feche com o Saldo Bancário + Aplicações. As regras de classificação ficam em
             {' '}<code>src/lib/empresas.ts</code>, por empresa.
-            {' '}<code>src/lib/empresas.ts</code>, por empresa.
           </div>
         </div>
       </div>
