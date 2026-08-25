@@ -6,6 +6,8 @@ import { arredonda, soma } from './dados';
 import type { Partida } from './types';
 
 export const NAO_CLASSIFICADO = 'Não Classificado';
+export const OUTRAS_ENTRADAS = 'Outras Entradas';
+export const OUTRAS_SAIDAS = 'Outras Saídas';
 
 export interface MovimentoRastreado {
   /** rótulo da linha de origem (ex.: "Despesas administrativas e Gerais"), ou NAO_CLASSIFICADO */
