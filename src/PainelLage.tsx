@@ -112,7 +112,7 @@ export default function App({ base, empresaId, empresaFixa = false }: { base: Pa
           >
             Resumo
           </button>
-          {!empresaFixa && <Link to="/" className="link-admin">Admin</Link>}
+          {!empresaFixa && <Link to="/upload" className="link-admin">Admin</Link>}
         </div>
 
       </header>
