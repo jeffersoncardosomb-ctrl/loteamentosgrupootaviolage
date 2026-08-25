@@ -1,28 +1,43 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { type SupabaseClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/integrations/supabase/client.server';
 import type { Database } from '@/integrations/supabase/types';
 import type { Partida } from './types';
 import type { LinhaImportacao } from './planilhaTipos';
 
-function clientePublico() {
-  const key = process.env['SUPABASE_PUBLISHABLE_KEY']!;
-  return createClient<Database>(process.env['SUPABASE_URL']!, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      fetch: (input, init) => {
-        const h = new Headers(init?.headers);
-        if (key.startsWith('sb_') && h.get('Authorization') === `Bearer ${key}`) {
-          h.delete('Authorization');
-        }
-        h.set('apikey', key);
-        return fetch(input, { ...init, headers: h });
-      },
-    },
-  });
+/** Traduz um código de link secreto no id da empresa. Nulo quando inválido. */
+export async function empresaPorToken(token: string): Promise<string | null> {
+  if (!/^[a-f0-9]{16,128}$/i.test(token)) return null;
+  const { data, error } = await supabaseAdmin
+    .from('empresa_acesso')
+    .select('empresa_id')
+    .eq('token', token)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.empresa_id ?? null;
+}
+
+export async function listarAcessosDb() {
+  const { data, error } = await supabaseAdmin
+    .from('empresa_acesso')
+    .select('empresa_id, token, atualizado_em');
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function regenerarTokenDb(empresaId: string) {
+  const token = [...crypto.getRandomValues(new Uint8Array(32))]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  const { error } = await supabaseAdmin
+    .from('empresa_acesso')
+    .upsert({ empresa_id: empresaId, token }, { onConflict: 'empresa_id' });
+  if (error) throw new Error(error.message);
+  return { empresaId, token };
 }
 
 /** Lê a base inteira de uma empresa, em páginas de mil linhas. */
 export async function lerPartidasPublicas(empresaId: string): Promise<Partida[]> {
-  const supabase = clientePublico();
+  const supabase = supabaseAdmin;
   const tamanho = 1000;
   const linhas: Partida[] = [];
   for (let inicio = 0; ; inicio += tamanho) {
@@ -50,6 +65,7 @@ export async function lerPartidasPublicas(empresaId: string): Promise<Partida[]>
   }
   return linhas;
 }
+
 
 const chave = (empresaId: string, l: LinhaImportacao) =>
   [empresaId, l.origemId, l.data, l.conta, l.documento, l.complemento, l.quantidade, l.saldo]
