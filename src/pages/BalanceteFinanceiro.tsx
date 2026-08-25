@@ -78,10 +78,15 @@ export function BalanceteFinanceiro({ todos, empresa }: { todos: Partida[]; empr
     return [entradas, ...comDespesasFinanceiras];
   }, [caixa, rastreados, despesasFinanceiras]);
 
-  const resultadoPeriodo = useMemo(() => {
-    const [entradasBloco, ...saidas] = blocos;
-    return soma([entradasBloco?.total ?? 0, ...saidas.map((b) => -b.total)]);
-  }, [blocos]);
+  const resultadoPeriodo = useMemo(
+    () =>
+      soma(
+        blocos.map((b) =>
+          b.titulo === 'Entradas' || b.titulo === OUTRAS_ENTRADAS ? b.total : -b.total,
+        ),
+      ),
+    [blocos],
+  );
 
   const acumulado = useMemo(() => conciliar(todos, empresa), [todos, empresa]);
   const saldoPagar = useMemo(
