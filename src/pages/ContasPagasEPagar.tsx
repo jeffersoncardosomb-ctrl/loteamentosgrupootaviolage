@@ -27,8 +27,6 @@ export function ContasPagasEPagar({
   const totalAberto = emAberto.reduce((a, t) => a + t.saldo, 0);
   const faixas = aging(emAberto).filter((f) => f.valor > 0);
 
-  const semTitulo = doPeriodo.divergencias;
-
   return (
     <>
       <div className="colunas colunas--pagar">
@@ -115,55 +113,23 @@ export function ContasPagasEPagar({
         </div>
       </div>
 
-      <div className="colunas colunas--2">
-        <div className="cartao">
-          <p className="cartao__titulo">Idade do que está em aberto</p>
-          {faixas.length === 0 ? (
-            <p className="vazio">Nada em aberto nesta data.</p>
-          ) : (
-            <table className="tabela">
-              <tbody>
-                {faixas.map((f, i) => (
-                  <tr key={f.rotulo} className={i % 2 ? 'zebra' : ''}>
-                    <td>{f.rotulo}</td>
-                    <td className="num fraco">{f.quantidade} tít.</td>
-                    <td className="num">{brl(f.valor)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        <div className="cartao">
-          <p className="cartao__titulo">Conciliação do período</p>
-          <p className="cartao__legenda">
-            {doPeriodo.resumo.baixasConciliadas} de {doPeriodo.resumo.qtdBaixas} pagamentos
-            {' '}amarrados a um título pelo número do documento, pelo nome do credor ou pela conta
-          </p>
-
-          {semTitulo.length === 0 ? (
-            <div className="aviso">
-              <div>
-                <strong>Tudo conferido</strong>
-                Todo pagamento do período tem um título correspondente na mesma conta.
-              </div>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {semTitulo.map((d) => (
-                <div className="aviso aviso--alerta" key={d.id}>
-                  <div>
-                    <strong>Pagamento sem título na mesma conta — {brl(d.valor)}</strong>
-                    {dataBR(d.data)} · {d.conta} · {d.descricao}. Débito em conta a pagar
-                    sem crédito correspondente. Costuma ser título classificado em outra
-                    conta do grupo 2.1.
-                  </div>
-                </div>
+      <div className="cartao">
+        <p className="cartao__titulo">Idade do que está em aberto</p>
+        {faixas.length === 0 ? (
+          <p className="vazio">Nada em aberto nesta data.</p>
+        ) : (
+          <table className="tabela">
+            <tbody>
+              {faixas.map((f, i) => (
+                <tr key={f.rotulo} className={i % 2 ? 'zebra' : ''}>
+                  <td>{f.rotulo}</td>
+                  <td className="num fraco">{f.quantidade} tít.</td>
+                  <td className="num">{brl(f.valor)}</td>
+                </tr>
               ))}
-            </div>
-          )}
-        </div>
+            </tbody>
+          </table>
+        )}
       </div>
 
       {detalhe && (
