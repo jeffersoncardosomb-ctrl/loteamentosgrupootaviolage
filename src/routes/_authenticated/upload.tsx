@@ -119,7 +119,10 @@ function UploadPage() {
     <div className="mx-auto max-w-2xl p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-foreground">Atualizar base contábil</h1>
-        <button type="button" onClick={sair} className="text-sm underline">Sair</button>
+        <div className="flex items-center gap-3">
+          <Link to="/usuarios" className="text-sm underline">Aprovação de usuários</Link>
+          <button type="button" onClick={sair} className="text-sm underline">Sair</button>
+        </div>
       </div>
       <p className="mt-2 text-sm text-muted-foreground">
         Envie a planilha no mesmo formato da extração atual (colunas DATA, CONTA_CONTABIL,
